@@ -1,7 +1,12 @@
-﻿#include <glad/glad.h>
+﻿#include <iostream>
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
-#include <iostream>
+
+#include <stdio.h>
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+
 #include "Fish.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -25,6 +30,12 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
 "}\n\0";
 
+
+__global__ void calculatePositionKernel(Fish* fishes, float dt, float* vertices,const int n) {
+	int i = threadIdx.x;
+	fishes[i].UpdatePositionKernel(fishes, n,dt);
+	fishes[i].SetVertexes(vertices+9*i);
+}
 
 int main()
 {
@@ -102,59 +113,66 @@ int main()
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
 
-	//float vertices[] = {
-	//	// Triangle 1
-	//	-0.5f, -0.5f, 0.0f,
-	//	0.0f, -0.5f, 0.0f,
-	//	-0.25f, 0.0f, 0.0f,
 
-	//	// Triangle 2
-	//	0.0f, -0.5f, 0.0f,
-	//	0.5f, -0.5f, 0.0f,
-	//	0.25f, 0.0f, 0.0f,
 
-	//	// Triangle 3
-	//	-0.35f, 0.0f, 0.0f,
-	//	0.25f, 0.0f, 0.0f,
-	//	0.0f, 0.5f, 0.0f,
-	//};
-
-	const int n = 20000;
+	const int n = 200;
 	float vertices[n * 9] = {0};
 
-	Fish* fishes[n];
+	Fish* fishes= new Fish[n];
 	for (int i = 0; i < n; i++) {
 		int x = rand() % 800;  // Random number between 0 and 800
 		int y = rand() % 600;  // Random number between 0 and 600
-		fishes[i] = new Fish(x, y);
+		fishes[i] = Fish(x, y);
 	}
+
+	Fish* dev_fishes;
+	float* dev_vertices;
+	
+	cudaError_t cudaStatus = cudaSetDevice(0);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
+		return 1;
+	}
+
+	cudaStatus = cudaMalloc((void**)&dev_vertices, n * sizeof(float) * 9);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaMalloc failed!");
+		goto Error;
+	}
+	cudaStatus = cudaMemcpy(dev_vertices, vertices, n * sizeof(float) * 9, cudaMemcpyHostToDevice);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaMemcpy failed!");
+		goto Error;
+	}
+
+	cudaStatus = cudaMalloc((void**)&dev_fishes, n * sizeof(Fish));
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaMalloc failed!");
+		goto Error;
+	}
+	cudaStatus = cudaMemcpy(dev_fishes, fishes, n * sizeof(Fish), cudaMemcpyHostToDevice);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudaMemcpy failed!");
+		goto Error;
+	}
+
+	
+
 	
 
 	unsigned int VBO, VAO;
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
-	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
 	glBindVertexArray(VAO);
-
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), nullptr, GL_STATIC_DRAW);
 
+	
+	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
-
-	// note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-	// You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
-	// VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
 	glBindVertexArray(0);
-
-
-	// uncomment this call to draw in wireframe polygons.
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-
-
 
 	// render loop
 	// -----------
@@ -172,32 +190,42 @@ int main()
 
 		double currentTime = glfwGetTime();
 
-		for (int i = 0; i < n; i++)
-		{
-			fishes[i]->CalculateNewPosition(currentTime - lastTime);
-			fishes[i]->SetVertexes(vertices + i * 9);
+		calculatePositionKernel <<<1, n >>> (dev_fishes,currentTime-lastTime, dev_vertices,n);
+		cudaStatus = cudaGetLastError();
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "calculatePositionKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
+			goto Error;
 		}
+
+		cudaStatus = cudaDeviceSynchronize();
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
+			goto Error;
+		}
+
+		cudaStatus = cudaMemcpy(vertices, dev_vertices, n* sizeof(float)*9, cudaMemcpyDeviceToHost);
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudaMemcpy failed!");
+			goto Error;
+		}
+
 
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-		//std::cout << vertices[0] << std::endl;
-		// draw our first triangle
+		
 		glUseProgram(shaderProgram);
-		glBindVertexArray(VAO); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
+		glBindVertexArray(VAO); 
 		glDrawArrays(GL_TRIANGLES, 0, n*3);
-		// glBindVertexArray(0); // no need to unbind it every time 
-
-		// glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
-		// -------------------------------------------------------------------------------
+		
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		
-
+		std::cout << currentTime - lastTime << std::endl;
 		lastTime = currentTime;
 	}
 
 
-
+Error:
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
 	glfwTerminate();
