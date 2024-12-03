@@ -37,34 +37,32 @@ public:
 	float lastVx = 100;
 	void CalculateDesiredVelocity(float& newVx, float& newVy, int mouseX, int mouseY) {
 		
-		if (lastMouseX == mouseX) {
-			newVx = lastVx;
-			newVy = 0;
-			return;
-		}
 		
-		lastMouseX = mouseX;
-
-		newVx = -1*lastVx;
-		lastVx = newVx;
-		std::cout << newVx << std::endl;
-		newVy = 0;
+		newVx = 400-x;
+		newVy = 300-y;
 		normalize(newVx, newVy);
 		newVx *= Speed;
 		newVy *= Speed;
-
-		//std::cout << mouseX << " " << mouseY << " " << x << " " << y << std::endl;
+		//std::cout << x << " " << y << std::endl;
+		
 	}
 
 	void ChangeVelocity(float newVx, float newVy, float dt)
 	{
-		float desiredDegree = atan2(-newVy, newVx) * 180 / M_PI;
-		float currentDegree = atan2(-vy, vx) * 180 / M_PI;
+		float desiredDegree = atan2(newVy, newVx) * 180 / M_PI;
+		float currentDegree = atan2(vy, vx) * 180 / M_PI;
 
+		
 		float degreeDifference = fabs(desiredDegree - currentDegree);
-		if(degreeDifference>180)
+		int signOfDegree = sign(desiredDegree - currentDegree);
+		
+		if (degreeDifference > 180)
+		{
 			degreeDifference = 360 - degreeDifference;
-
+			signOfDegree = -signOfDegree;
+		}
+			
+		std::cout << desiredDegree - currentDegree << std::endl;
 		float maxChangeOfDegree = MaxChangeOfDegreePerSecond * dt;
 
 		if (degreeDifference < maxChangeOfDegree)
@@ -74,15 +72,18 @@ public:
 			return;
 		}
 		
-		int signOfDegree = sign(desiredDegree - currentDegree);
+		//int signOfDegree = sign(desiredDegree - currentDegree);
 		float newDegree = currentDegree + signOfDegree * maxChangeOfDegree;
 		float newVx2 = cos(newDegree * M_PI / 180) * Speed;
-		float newVy2 = -sin(newDegree * M_PI / 180) * Speed;
+		float newVy2 = sin(newDegree * M_PI / 180) * Speed;
+
+		//std::cout << "Current Degree: " << currentDegree << " Desired Degree: " << desiredDegree << " New Degree: " << newDegree << std::endl;
+
+		//std::cout << "Current Degree: " << currentDegree << " Desired Degree: " << desiredDegree << " New Degree: " << newDegree << std::endl;
+		//std::cout << "Current Velocity: " << vx << " " << vy << " New Velocity: " << newVx2 << " " << newVy2 << " Wanted Velocity" << newVx << " " << newVy << std::endl<< std::endl;
+		//std::cout << newVx2 << " " << newVy2 << std::endl;
 		vx = newVx2;
 		vy = newVy2;
-		//std::cout << currentDegree << " " << desiredDegree<<" " << desiredDegree - currentDegree <<" "<<signOfDegree << std::endl;
-		//std::cout <<"v("<<vx << ", " << vy << ") newV(" << newVx << ", " << newVy <<")" << std::endl;
-		
 	}
 
 	void UpdatePositionKernel(Fish* fishes, int n, float dt, int mouseX, int mouseY) {

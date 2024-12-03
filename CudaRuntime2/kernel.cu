@@ -141,6 +141,7 @@ int main()
 		int y = rand() % 600;  
 		fishes[i] = Fish(x, y);
 	}
+	fishes[0] = Fish(0, 0);
 
 	/*Fish* dev_fishes;
 	float* dev_vertices;
@@ -194,6 +195,7 @@ int main()
 	// render loop
 	// -----------
 	double lastTime = glfwGetTime();
+	_sleep(10);
 	while (!glfwWindowShouldClose(window))
 	{
 		// input
