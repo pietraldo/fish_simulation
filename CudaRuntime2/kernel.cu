@@ -32,10 +32,26 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "}\n\0";
 
 
-__global__ void calculatePositionKernel(Fish* fishes, float dt, float* vertices,const int n) {
-	int i = threadIdx.x;
-	fishes[i].UpdatePositionKernel(fishes, n,dt);
-	fishes[i].SetVertexes(vertices+9*i);
+//__global__ void calculatePositionKernel(Fish* fishes, float dt, float* vertices,const int n) {
+//	int i = threadIdx.x;
+//	fishes[i].UpdatePositionKernel(fishes, n,dt);
+//	fishes[i].SetVertexes(vertices+9*i);
+//}
+
+
+int mouseX = 0;
+int mouseY = 0;
+// Mouse button callback
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	{
+		double xpos, ypos;
+		glfwGetCursorPos(window, &xpos, &ypos);
+		std::cout << "Mouse clicked at position: (" << xpos << ", " << ypos << ")\n";
+		mouseX = xpos;
+		mouseY = ypos;
+	}
 }
 
 int main()
@@ -116,17 +132,17 @@ int main()
 
 
 
-	const int n = 20;
+	const int n = 1;
 	float vertices[n * 9] = {0};
 
 	Fish* fishes= new Fish[n];
 	for (int i = 0; i < n; i++) {
-		int x = rand() % 800;  // Random number between 0 and 800
-		int y = rand() % 600;  // Random number between 0 and 600
+		int x = rand() % 800;  
+		int y = rand() % 600;  
 		fishes[i] = Fish(x, y);
 	}
 
-	Fish* dev_fishes;
+	/*Fish* dev_fishes;
 	float* dev_vertices;
 	
 	cudaError_t cudaStatus = cudaSetDevice(0);
@@ -155,10 +171,10 @@ int main()
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudaMemcpy failed!");
 		goto Error;
-	}
+	}*/
 
 	
-
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
 	
 
 	unsigned int VBO, VAO;
@@ -191,7 +207,7 @@ int main()
 
 		double currentTime = glfwGetTime();
 
-		calculatePositionKernel <<<1, n >>> (dev_fishes,currentTime-lastTime, dev_vertices,n);
+		/*calculatePositionKernel <<<1, n >>> (dev_fishes,currentTime-lastTime, dev_vertices,n);
 		cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "calculatePositionKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
@@ -208,9 +224,14 @@ int main()
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "cudaMemcpy failed!");
 			goto Error;
+		}*/
+
+		for (int i = 0; i < n; i++) {
+			fishes[i].UpdatePositionKernel(fishes, n, currentTime-lastTime, mouseX, mouseY);
+			fishes[i].SetVertexes(vertices + 9 * i);
 		}
 
-
+		//_sleep(10);
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
 		
@@ -221,13 +242,13 @@ int main()
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		
-		std::cout << 1/(currentTime - lastTime) << std::endl;
+		//std::cout << 1/(currentTime - lastTime) << std::endl;
 
 		lastTime = currentTime;
 	}
 
 
-Error:
+//Error:
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
 	glfwTerminate();

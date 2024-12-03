@@ -5,8 +5,9 @@
 #include "device_launch_parameters.h"
 
 #include <iostream>
+#include <stdio.h>
 #include <math.h>
-
+#include <cmath>
 
 class Fish
 {
@@ -18,169 +19,81 @@ private:
 	float vx = 1;
 	float vy = 0.4;
 
-	float speed = 100.0f;
+	static float Speed;
+	static float MaxChangeOfDegreePerSecond;
+
 public:
 
-	__host__ __device__ Fish() {
-		x = 0;
-		y = 0;
-	}
+	Fish(): x(0), y(0){}
 
-	__host__ __device__ Fish(float x, float y) {
-		this->x = x;
-		this->y = y;
-	}
+	Fish(float x, float y):x(x), y(y) {	}
 
 	__device__  char CheckPointSide(float x1, float y1, float x2, float y2, float px, float py) const {
 		float value = (x2 - x1) * (py - y1) - (y2 - y1) * (px - x1);
 		return (value > 0) ? 'L' : 'R';
 	}
 
-	__host__ __device__ void CalculateNewPosition(float dt) {
-		x += vx * dt * speed;
-		y += vy * dt * speed;
-
-		if (x < 0) {
-			x = 0;
-			vx = -vx;
+	int lastMouseX = 0;
+	float lastVx = 100;
+	void CalculateDesiredVelocity(float& newVx, float& newVy, int mouseX, int mouseY) {
+		
+		if (lastMouseX == mouseX) {
+			newVx = lastVx;
+			newVy = 0;
+			return;
 		}
-		if (x > 800) {
-			x = 800;
-			vx = -vx;
-		}
-		if (y < 0) {
-			y = 0;
-			vy = -vy;
-		}
-		if (y > 600) {
-			y = 600;
-			vy = -vy;
-		}
-	}
+		
+		lastMouseX = mouseX;
 
-	__host__ __device__ float obliczKatMiedzyWektorami(float x1, float y1, float x2, float y2) {
-		float iloczynSkalarny = x1 * x2 + y1 * y2;
-
-		float dlugoscA = sqrt(x1 * x1 + y1 * y1);
-		float dlugoscB = sqrt(x2 * x2 + y2 * y2);
-
-		float cosTheta = iloczynSkalarny / (dlugoscA * dlugoscB);
-		float katRadiany = acos(cosTheta);
-		float katStopnie = katRadiany * 180.0 / M_PI;
-
-		return katStopnie;
-	}
-
-	__host__ __device__ void UpdatePositionKernel(Fish* fishes, int n, float dt) {
-
-		float Speed = 60;
-		float AvoidRange = 16;
-		float AligmentRange = 150;
-		float CohesionRange = 65;
-
-		float AvoidFactor = 351;
-		float AligmentFactor = 909;
-		float CohasionFactor = 199;
-
-
-		float MaxSpeedDifference =0.01;
-		float ChangesOfVelocity = 0.1;
-
-		float VisionDegree = 120;
-
-
-		int idx = blockIdx.x * blockDim.x + threadIdx.x;
-		if (idx >= n) return;
-
-		Fish* fish = &fishes[idx];
-		/*float newVx = fish->vx;
-		float newVy = fish->vy;*/
-
-		//float closeDx = 0, closeDy = 0;
-		//float vx_avg = 0, vy_avg = 0;
-		//int neighborsAligment = 0;
-
-		//float xpos_avg = 0, ypos_avg = 0;
-		//int neghborsCohesion = 0;
-
-		//for (int i = 0; i < n; i++) {
-		//	if (i == idx) continue;
-
-		//	Fish other = fishes[i];
-		//	float dx = other.x - fish->x;
-		//	float dy = other.y - fish->y;
-		//	float dist = sqrtf(dx * dx + dy * dy);
-
-		//	float degree = atan2f(fish->vy, fish->vx);
-		//	float ddegree = M_PI / 180 * VisionDegree;
-
-		//	// Avoidance
-		//	if (dist < AvoidRange) {
-		//		closeDx += (fish->x - other.x);
-		//		closeDy += (fish->y - other.y);
-		//	}
-
-		//	// Alignment
-		//	if (dist < AligmentRange) {
-		//		vx_avg += other.vx;
-		//		vy_avg += other.vy;
-		//		neighborsAligment++;
-		//	}
-
-		//	// Cohesion
-		//	if (dist < CohesionRange) {
-		//		xpos_avg += other.x;
-		//		ypos_avg += other.y;
-		//		neghborsCohesion++;
-		//	}
-		//}
-
-		//// Average calculations
-		//if (neighborsAligment > 0) {
-		//	vx_avg /= neighborsAligment;
-		//	vy_avg /= neighborsAligment;
-		//}
-		//if (neghborsCohesion > 0) {
-		//	xpos_avg /= neghborsCohesion;
-		//	ypos_avg /= neghborsCohesion;
-		//}
-
-		//// Apply rules
-		//newVx += (vx_avg - fish->vx) * AligmentFactor;
-		//newVy += (vy_avg - fish->vy) * AligmentFactor;
-		//newVx += (xpos_avg - fish->x) * CohasionFactor;
-		//newVy += (ypos_avg - fish->y) * CohasionFactor;
-		//newVx += closeDx * AvoidFactor;
-		//newVy += closeDy * AvoidFactor;
-
-		//if (x > 700 || x < 100 || y>500 || y < 100)
-		//{
-		//	newVx = (400-x)/10;
-		//	newVy = (300-y)/10;
-		//}
-		float newVx = (400 - x) / 10;
-		float newVy = (300-y)/10;
-
+		newVx = -1*lastVx;
+		lastVx = newVx;
+		std::cout << newVx << std::endl;
+		newVy = 0;
 		normalize(newVx, newVy);
 		newVx *= Speed;
 		newVy *= Speed;
 
-		if (abs(fish->vx - newVx) > MaxSpeedDifference)
-			newVx = sign(newVx) * MaxSpeedDifference;
-		if (abs(fish->vy - newVy) > MaxSpeedDifference)
-			newVy = sign(newVy) * MaxSpeedDifference;
+		//std::cout << mouseX << " " << mouseY << " " << x << " " << y << std::endl;
+	}
 
-		normalize(newVx, newVy);
-		newVx *= Speed;
-		newVy *= Speed;
+	void ChangeVelocity(float newVx, float newVy, float dt)
+	{
+		float desiredDegree = atan2(-newVy, newVx) * 180 / M_PI;
+		float currentDegree = atan2(-vy, vx) * 180 / M_PI;
 
-		fish->vx += (newVx - fish->vx) * ChangesOfVelocity;
-		fish->vy += (newVy - fish->vy) * ChangesOfVelocity;
+		float degreeDifference = fabs(desiredDegree - currentDegree);
+		if(degreeDifference>180)
+			degreeDifference = 360 - degreeDifference;
 
+		float maxChangeOfDegree = MaxChangeOfDegreePerSecond * dt;
+
+		if (degreeDifference < maxChangeOfDegree)
+		{
+			vx = newVx;
+			vy = newVy;
+			return;
+		}
 		
+		int signOfDegree = sign(desiredDegree - currentDegree);
+		float newDegree = currentDegree + signOfDegree * maxChangeOfDegree;
+		float newVx2 = cos(newDegree * M_PI / 180) * Speed;
+		float newVy2 = -sin(newDegree * M_PI / 180) * Speed;
+		vx = newVx2;
+		vy = newVy2;
+		//std::cout << currentDegree << " " << desiredDegree<<" " << desiredDegree - currentDegree <<" "<<signOfDegree << std::endl;
+		//std::cout <<"v("<<vx << ", " << vy << ") newV(" << newVx << ", " << newVy <<")" << std::endl;
 		
-		fish->x += fish->vx*dt;
-		fish->y += fish->vy*dt;
+	}
+
+	void UpdatePositionKernel(Fish* fishes, int n, float dt, int mouseX, int mouseY) {
+
+		float newVx, newVy;
+		CalculateDesiredVelocity(newVx, newVy, mouseX, mouseY);
+		
+		ChangeVelocity(newVx, newVy, dt);
+
+		x += vx * dt;
+		y += vy * dt;
 	}
 
 	__host__ __device__ int sign(float x) {
