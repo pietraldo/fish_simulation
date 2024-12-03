@@ -33,13 +33,12 @@ public:
 		return (value > 0) ? 'L' : 'R';
 	}
 
-	int lastMouseX = 0;
-	float lastVx = 100;
+
 	void CalculateDesiredVelocity(float& newVx, float& newVy, int mouseX, int mouseY) {
 		
 		
-		newVx = 400-x;
-		newVy = 300-y;
+		newVx = mouseX-x;
+		newVy = (600-mouseY)-y;
 		normalize(newVx, newVy);
 		newVx *= Speed;
 		newVy *= Speed;
@@ -62,7 +61,7 @@ public:
 			signOfDegree = -signOfDegree;
 		}
 			
-		std::cout << desiredDegree - currentDegree << std::endl;
+		//std::cout << desiredDegree - currentDegree << std::endl;
 		float maxChangeOfDegree = MaxChangeOfDegreePerSecond * dt;
 
 		if (degreeDifference < maxChangeOfDegree)
