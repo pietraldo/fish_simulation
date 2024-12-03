@@ -115,7 +115,7 @@ int main()
 
 
 
-	const int n = 200;
+	const int n = 20;
 	float vertices[n * 9] = {0};
 
 	Fish* fishes= new Fish[n];
@@ -220,7 +220,8 @@ int main()
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		
-		std::cout << currentTime - lastTime << std::endl;
+		std::cout << 1/(currentTime - lastTime) << std::endl;
+
 		lastTime = currentTime;
 	}
 

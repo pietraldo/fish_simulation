@@ -60,7 +60,7 @@ public:
 
 	__host__ __device__ void UpdatePositionKernel(Fish* fishes, int n, float dt) {
 
-		float Speed = 8;
+		float Speed = 60;
 		float AvoidRange = 16;
 		float AligmentRange = 150;
 		float CohesionRange = 65;
@@ -69,8 +69,9 @@ public:
 		float AligmentFactor = 909;
 		float CohasionFactor = 199;
 
-		float ChangesOfVelocity = dt*0.01;
 
+		float ChangeOfDegree = 20; // zmiana 20 stopni na sekunde
+		float ChangesOfVelocity = 0.1;
 
 		float VisionDegree = 120;
 
@@ -79,86 +80,92 @@ public:
 		if (idx >= n) return;
 
 		Fish* fish = &fishes[idx];
-		float newVx = fish->vx;
-		float newVy = fish->vy;
+		/*float newVx = fish->vx;
+		float newVy = fish->vy;*/
 
-		float closeDx = 0, closeDy = 0;
-		float vx_avg = 0, vy_avg = 0;
-		int neighborsAligment = 0;
+		//float closeDx = 0, closeDy = 0;
+		//float vx_avg = 0, vy_avg = 0;
+		//int neighborsAligment = 0;
 
-		float xpos_avg = 0, ypos_avg = 0;
-		int neghborsCohesion = 0;
+		//float xpos_avg = 0, ypos_avg = 0;
+		//int neghborsCohesion = 0;
 
-		for (int i = 0; i < n; i++) {
-			if (i == idx) continue;
+		//for (int i = 0; i < n; i++) {
+		//	if (i == idx) continue;
 
-			Fish other = fishes[i];
-			float dx = other.x - fish->x;
-			float dy = other.y - fish->y;
-			float dist = sqrtf(dx * dx + dy * dy);
+		//	Fish other = fishes[i];
+		//	float dx = other.x - fish->x;
+		//	float dy = other.y - fish->y;
+		//	float dist = sqrtf(dx * dx + dy * dy);
 
-			float degree = atan2f(fish->vy, fish->vx);
-			float ddegree = M_PI / 180 * VisionDegree;
+		//	float degree = atan2f(fish->vy, fish->vx);
+		//	float ddegree = M_PI / 180 * VisionDegree;
 
-			// Avoidance
-			if (dist < AvoidRange) {
-				closeDx += (fish->x - other.x);
-				closeDy += (fish->y - other.y);
-			}
+		//	// Avoidance
+		//	if (dist < AvoidRange) {
+		//		closeDx += (fish->x - other.x);
+		//		closeDy += (fish->y - other.y);
+		//	}
 
-			// Alignment
-			if (dist < AligmentRange) {
-				vx_avg += other.vx;
-				vy_avg += other.vy;
-				neighborsAligment++;
-			}
+		//	// Alignment
+		//	if (dist < AligmentRange) {
+		//		vx_avg += other.vx;
+		//		vy_avg += other.vy;
+		//		neighborsAligment++;
+		//	}
 
-			// Cohesion
-			if (dist < CohesionRange) {
-				xpos_avg += other.x;
-				ypos_avg += other.y;
-				neghborsCohesion++;
-			}
-		}
+		//	// Cohesion
+		//	if (dist < CohesionRange) {
+		//		xpos_avg += other.x;
+		//		ypos_avg += other.y;
+		//		neghborsCohesion++;
+		//	}
+		//}
 
-		// Average calculations
-		if (neighborsAligment > 0) {
-			vx_avg /= neighborsAligment;
-			vy_avg /= neighborsAligment;
-		}
-		if (neghborsCohesion > 0) {
-			xpos_avg /= neghborsCohesion;
-			ypos_avg /= neghborsCohesion;
-		}
+		//// Average calculations
+		//if (neighborsAligment > 0) {
+		//	vx_avg /= neighborsAligment;
+		//	vy_avg /= neighborsAligment;
+		//}
+		//if (neghborsCohesion > 0) {
+		//	xpos_avg /= neghborsCohesion;
+		//	ypos_avg /= neghborsCohesion;
+		//}
 
-		// Apply rules
-		newVx += (vx_avg - fish->vx) * AligmentFactor;
-		newVy += (vy_avg - fish->vy) * AligmentFactor;
-		newVx += (xpos_avg - fish->x) * CohasionFactor;
-		newVy += (ypos_avg - fish->y) * CohasionFactor;
-		newVx += closeDx * AvoidFactor;
-		newVy += closeDy * AvoidFactor;
+		//// Apply rules
+		//newVx += (vx_avg - fish->vx) * AligmentFactor;
+		//newVy += (vy_avg - fish->vy) * AligmentFactor;
+		//newVx += (xpos_avg - fish->x) * CohasionFactor;
+		//newVy += (ypos_avg - fish->y) * CohasionFactor;
+		//newVx += closeDx * AvoidFactor;
+		//newVy += closeDy * AvoidFactor;
 
-		// Normalize and update
-		float speed_mag = sqrtf(newVx * newVx + newVy * newVy);
-		if (speed_mag > 0) {
-			newVx = (newVx / speed_mag) * Speed;
-			newVy = (newVy / speed_mag) *Speed;
-		}
+		//if (x > 700 || x < 100 || y>500 || y < 100)
+		//{
+		//	newVx = (400-x)/10;
+		//	newVy = (300-y)/10;
+		//}
+		float newVx = (400 - x) / 10;
+		float newVy = (300-y)/10;
 
-		if (x > 700 || x < 100 || y>500 || y < 100)
-		{
-			newVx = (400-x)/10;
-			newVy = (300-y)/10;
-		}
+		normalize(newVx, newVy);
+		newVx *= Speed;
+		newVy *= Speed;
 
 		fish->vx += (newVx - fish->vx) * ChangesOfVelocity;
 		fish->vy += (newVy - fish->vy) * ChangesOfVelocity;
 
+		
+		fish->x += fish->vx*dt;
+		fish->y += fish->vy*dt;
+	}
 
-
-		fish->x += fish->vx;
-		fish->y += fish->vy;
+	__host__ __device__ void normalize(float& x, float& y) {
+		float mag = sqrtf(x * x + y * y);
+		if (mag > 0) {
+			x = x / mag;
+			y = y / mag;
+		}
 	}
 
 	__host__ __device__ void SetVertexes(float* arr)
@@ -180,16 +187,8 @@ public:
 		cx = (arr[0] + arr[3] + arr[6]) / 3;
 		cy = (arr[1] + arr[4] + arr[7]) / 3;
 
-		float degree = static_cast<float>(tan(abs(vy) / abs(vx))) * 180 / M_PI;
-		if (vx < 0) {
-			degree = 180 - degree;
-		}
-		if (vy > 0) {
-			degree = -degree;
-		}
+		float degree = atan2(-vy, vx) * 180 / M_PI;
 
-
-		//std::cout << vy << " " << vx << " " << degree << std::endl;
 
 		rotatePointAroundCenter(arr[0], arr[1], cx, cy, degree);
 		rotatePointAroundCenter(arr[3], arr[4], cx, cy, degree);
