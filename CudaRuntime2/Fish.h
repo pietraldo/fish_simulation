@@ -58,6 +58,19 @@ public:
 		}
 	}
 
+	__host__ __device__ float obliczKatMiedzyWektorami(float x1, float y1, float x2, float y2) {
+		float iloczynSkalarny = x1 * x2 + y1 * y2;
+
+		float dlugoscA = sqrt(x1 * x1 + y1 * y1);
+		float dlugoscB = sqrt(x2 * x2 + y2 * y2);
+
+		float cosTheta = iloczynSkalarny / (dlugoscA * dlugoscB);
+		float katRadiany = acos(cosTheta);
+		float katStopnie = katRadiany * 180.0 / M_PI;
+
+		return katStopnie;
+	}
+
 	__host__ __device__ void UpdatePositionKernel(Fish* fishes, int n, float dt) {
 
 		float Speed = 60;
@@ -70,7 +83,7 @@ public:
 		float CohasionFactor = 199;
 
 
-		float ChangeOfDegree = 20; // zmiana 20 stopni na sekunde
+		float MaxSpeedDifference =0.01;
 		float ChangesOfVelocity = 0.1;
 
 		float VisionDegree = 120;
@@ -152,12 +165,26 @@ public:
 		newVx *= Speed;
 		newVy *= Speed;
 
+		if (abs(fish->vx - newVx) > MaxSpeedDifference)
+			newVx = sign(newVx) * MaxSpeedDifference;
+		if (abs(fish->vy - newVy) > MaxSpeedDifference)
+			newVy = sign(newVy) * MaxSpeedDifference;
+
+		normalize(newVx, newVy);
+		newVx *= Speed;
+		newVy *= Speed;
+
 		fish->vx += (newVx - fish->vx) * ChangesOfVelocity;
 		fish->vy += (newVy - fish->vy) * ChangesOfVelocity;
 
 		
+		
 		fish->x += fish->vx*dt;
 		fish->y += fish->vy*dt;
+	}
+
+	__host__ __device__ int sign(float x) {
+		return (x > 0) - (x < 0);
 	}
 
 	__host__ __device__ void normalize(float& x, float& y) {
@@ -187,18 +214,17 @@ public:
 		cx = (arr[0] + arr[3] + arr[6]) / 3;
 		cy = (arr[1] + arr[4] + arr[7]) / 3;
 
-		float degree = atan2(-vy, vx) * 180 / M_PI;
+		float degreeInRadians = atan2(-vy, vx);
 
 
-		rotatePointAroundCenter(arr[0], arr[1], cx, cy, degree);
-		rotatePointAroundCenter(arr[3], arr[4], cx, cy, degree);
-		rotatePointAroundCenter(arr[6], arr[7], cx, cy, degree);
+		rotatePointAroundCenter(arr[0], arr[1], cx, cy, degreeInRadians);
+		rotatePointAroundCenter(arr[3], arr[4], cx, cy, degreeInRadians);
+		rotatePointAroundCenter(arr[6], arr[7], cx, cy, degreeInRadians);
 
 
 	}
 
-	__host__ __device__  void rotatePointAroundCenter(float& x, float& y, float cx, float cy, float angleDegrees) {
-		float radians = static_cast<float>(angleDegrees * M_PI / 180.0f);
+	__host__ __device__  void rotatePointAroundCenter(float& x, float& y, float cx, float cy, float radians) {
 		float cosTheta = static_cast<float>(cos(radians));
 		float sinTheta = static_cast<float>(sin(radians));
 
