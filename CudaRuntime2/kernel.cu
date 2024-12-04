@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-
+#include <cuda_gl_interop.h>
 
 #include "Fish.h"
 
@@ -17,6 +17,9 @@ void processInput(GLFWwindow* window);
 const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 900;
 const unsigned int MESH_SIZE = 100;
+
+const unsigned int NUM_FISH = 10000;
+const unsigned int BLOCK_SIZE = 1000;
 
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
@@ -43,7 +46,7 @@ const char* fragmentShaderSource = "#version 330 core\n"
 
 
 __global__ void calculatePositionKernel(Fish* fishes, float dt, float* vertices, const int n) {
-	int i = threadIdx.x + 500 * blockIdx.x;
+	int i = threadIdx.x + BLOCK_SIZE * blockIdx.x;
 	fishes[i].UpdatePositionKernel(fishes, n, dt, 0, 0, 4000, 50.6, 0.3);
 	fishes[i].SetVertexes(vertices + 12 * i);
 }
@@ -176,7 +179,7 @@ int main()
 
 
 
-	const int n = 1000;
+	const int n = NUM_FISH;
 	float vertices[n * 12] = { 0 };
 
 	Fish* fishes = new Fish[n];
@@ -237,14 +240,20 @@ int main()
 
 
 
-	unsigned int VBO, VAO;
+	unsigned int  VAO;
+	//unsigned int VBO, VAO;
 	glGenVertexArrays(1, &VAO);
-	glGenBuffers(1, &VBO);
+	//glGenBuffers(1, &VBO);
 	glBindVertexArray(VAO);
+	/*glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), nullptr, GL_STATIC_DRAW);*/
+
+	GLuint VBO;
+	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), nullptr, GL_STATIC_DRAW);
-
-
+	glBufferData(GL_ARRAY_BUFFER, n * sizeof(float) * 12, nullptr, GL_DYNAMIC_DRAW);
+	cudaGraphicsResource* cudaVBO;
+	cudaGraphicsGLRegisterBuffer(&cudaVBO, VBO, cudaGraphicsMapFlagsWriteDiscard);
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
@@ -272,7 +281,12 @@ int main()
 
 		double currentTime = glfwGetTime();
 
-		calculatePositionKernel << <2, 500 >> > (dev_fishes, currentTime - lastTime, dev_vertices, n);
+		size_t num_bytes;
+
+		cudaGraphicsMapResources(1, &cudaVBO, 0);
+		cudaGraphicsResourceGetMappedPointer((void**)&dev_vertices, &num_bytes, cudaVBO);
+
+		calculatePositionKernel << <NUM_FISH/BLOCK_SIZE, BLOCK_SIZE >> > (dev_fishes, currentTime - lastTime, dev_vertices, n);
 		cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "calculatePositionKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
@@ -285,23 +299,19 @@ int main()
 			goto Error;
 		}
 
-		cudaStatus = cudaMemcpy(vertices, dev_vertices, n * sizeof(float) * 12, cudaMemcpyDeviceToHost);
+		/*cudaStatus = cudaMemcpy(vertices, dev_vertices, n * sizeof(float) * 12, cudaMemcpyDeviceToHost);
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "cudaMemcpy failed!");
 			goto Error;
-		}
-
-		/*for (int i = 0; i < n; i++) {
-			fishes[i].UpdatePositionKernel(fishes, n, currentTime-lastTime, mouseX, mouseY, alignWeight, cohesionWeight, avoidWeight);
-			fishes[i].SetVertexes(vertices + 12 * i);
 		}*/
 
-		//_sleep(10);
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
+		/*glBindBuffer(GL_ARRAY_BUFFER, VBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);*/
+
+		cudaGraphicsUnmapResources(1, &cudaVBO, 0);
 
 		glUseProgram(shaderProgram);
-		glBindVertexArray(VAO);
+		glBindVertexArray(VBO);
 		glDrawArrays(GL_TRIANGLES, 0, n * 3);
 
 		glfwSwapBuffers(window);
