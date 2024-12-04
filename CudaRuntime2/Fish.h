@@ -8,10 +8,11 @@
 #include <stdio.h>
 #include <math.h>
 #include <cmath>
+#include <vector>
 
 class Fish
 {
-
+	
 private:
 	float x;
 	float y;
@@ -21,20 +22,64 @@ private:
 
 	static float Speed;
 	static float MaxChangeOfDegreePerSecond;
-
+	float colorId = 2;
+	static int FishId;
+	int id;
 public:
 
-	Fish(): x(0), y(0){}
+	Fish(): x(0), y(0){
+		id = FishId++;
+		colorId = (id == 0) ? 0 : 1;
+		std::cout << colorId <<" "<<id << std::endl;
+	}
 
-	Fish(float x, float y):x(x), y(y) {	}
+	Fish(float x, float y):x(x), y(y){	
+		id = FishId++;
+		colorId = (id == 0) ? 0 : 1;
+		std::cout << colorId << " "<<id<< std::endl;
+	}
+
+	void SetCordinates(float x, float y) {
+		this->x = x;
+		this->y = y;
+	}
 
 	__device__  char CheckPointSide(float x1, float y1, float x2, float y2, float px, float py) const {
 		float value = (x2 - x1) * (py - y1) - (y2 - y1) * (px - x1);
 		return (value > 0) ? 'L' : 'R';
 	}
 
+	/*float Distance(const Fish& fish) const {
+		return sqrt((x - fish.x) * (x - fish.x) + (y - fish.y) * (y - fish.y));
+	}
 
-	void CalculateDesiredVelocity(float& newVx, float& newVy, int mouseX, int mouseY) {
+	bool Angle(float angle, const Fish& fish) const {
+		float direction = atan2(vy, vx) * 180 / M_PI;
+		float angleLow = direction - angle / 2;
+		float angleHigh = direction + angle / 2;
+		float fishAngle = atan2(fish.y, fish.x) * 180 / M_PI;
+
+
+	}
+
+	vector<Fish> GetNeighbors(Fish* fishes,int n, int distance, float angle) {
+		vector<Fish> neighbors;
+
+		for (int i = 0; i < n; i++) {
+			if (this == &fishes[i]) continue;
+			if (Distance(fishes[i]) < distance && Angle(angle, fishes[i])) {
+				neighbors.push_back(fishes[i]);
+			}
+		}
+		return neighbors;
+	}*/
+
+	void CalculateAvoidVelocity(Fish* fishes, float& newVx, float& newVy)
+	{
+
+	}
+
+	void CalculateDesiredVelocity(Fish* fishes, float& newVx, float& newVy, int mouseX, int mouseY) {
 		
 		
 		newVx = mouseX-x;
@@ -61,7 +106,6 @@ public:
 			signOfDegree = -signOfDegree;
 		}
 			
-		//std::cout << desiredDegree - currentDegree << std::endl;
 		float maxChangeOfDegree = MaxChangeOfDegreePerSecond * dt;
 
 		if (degreeDifference < maxChangeOfDegree)
@@ -71,24 +115,19 @@ public:
 			return;
 		}
 		
-		//int signOfDegree = sign(desiredDegree - currentDegree);
 		float newDegree = currentDegree + signOfDegree * maxChangeOfDegree;
 		float newVx2 = cos(newDegree * M_PI / 180) * Speed;
 		float newVy2 = sin(newDegree * M_PI / 180) * Speed;
 
-		//std::cout << "Current Degree: " << currentDegree << " Desired Degree: " << desiredDegree << " New Degree: " << newDegree << std::endl;
-
-		//std::cout << "Current Degree: " << currentDegree << " Desired Degree: " << desiredDegree << " New Degree: " << newDegree << std::endl;
-		//std::cout << "Current Velocity: " << vx << " " << vy << " New Velocity: " << newVx2 << " " << newVy2 << " Wanted Velocity" << newVx << " " << newVy << std::endl<< std::endl;
-		//std::cout << newVx2 << " " << newVy2 << std::endl;
 		vx = newVx2;
 		vy = newVy2;
 	}
 
 	void UpdatePositionKernel(Fish* fishes, int n, float dt, int mouseX, int mouseY) {
 
-		float newVx, newVy;
-		CalculateDesiredVelocity(newVx, newVy, mouseX, mouseY);
+		float newVx;
+		float newVy;
+		CalculateDesiredVelocity(fishes,newVx, newVy, mouseX, mouseY);
 		
 		ChangeVelocity(newVx, newVy, dt);
 
@@ -113,26 +152,30 @@ public:
 		arr[0] = x + 20;
 		arr[1] = y;
 
-		arr[3] = x;
-		arr[4] = y - 4;
+		arr[3] = colorId;
+		arr[7] = colorId;
+		arr[11] = colorId;
 
-		arr[6] = x;
-		arr[7] = y + 4;
+		arr[4] = x;
+		arr[5] = y - 4;
+
+		arr[8] = x;
+		arr[9] = y + 4;
 
 		ChangeCordinates(arr[0], arr[1]);
-		ChangeCordinates(arr[3], arr[4]);
-		ChangeCordinates(arr[6], arr[7]);
+		ChangeCordinates(arr[4], arr[5]);
+		ChangeCordinates(arr[8], arr[9]);
 
 		float cx = 0, cy = 0;
-		cx = (arr[0] + arr[3] + arr[6]) / 3;
-		cy = (arr[1] + arr[4] + arr[7]) / 3;
+		cx = (arr[0] + arr[4] + arr[8]) / 3;
+		cy = (arr[1] + arr[5] + arr[9]) / 3;
 
 		float degreeInRadians = atan2(-vy, vx);
 
 
 		rotatePointAroundCenter(arr[0], arr[1], cx, cy, degreeInRadians);
-		rotatePointAroundCenter(arr[3], arr[4], cx, cy, degreeInRadians);
-		rotatePointAroundCenter(arr[6], arr[7], cx, cy, degreeInRadians);
+		rotatePointAroundCenter(arr[4], arr[5], cx, cy, degreeInRadians);
+		rotatePointAroundCenter(arr[8], arr[9], cx, cy, degreeInRadians);
 
 
 	}

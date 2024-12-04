@@ -19,16 +19,25 @@ const unsigned int SCR_HEIGHT = 600;
 
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
+"layout(location = 1) in float colorId;\n"
+"out float vID;\n"
 "void main()\n"
 "{\n"
 "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
+"   vID = colorId;\n"
 "}\0";
 
 const char* fragmentShaderSource = "#version 330 core\n"
+"in float vID;\n"
 "out vec4 FragColor;\n"
 "void main()\n"
 "{\n"
-"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+"if(vID == 0.0f){\n"
+"   FragColor = vec4(1.0f, 0.0f, 0.2f, 1.0f);}\n"
+"else if(vID == 1.0f){\n"
+"   FragColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);}\n"
+"else if(vID == 2.0f){\n"
+"   FragColor = vec4(0.0f, 0.0f, 1.0f, 1.0f);}\n"
 "}\n\0";
 
 
@@ -132,16 +141,16 @@ int main()
 
 
 
-	const int n = 1;
-	float vertices[n * 9] = {0};
+	const int n = 2;
+	float vertices[n * 12] = {0};
 
 	Fish* fishes= new Fish[n];
 	for (int i = 0; i < n; i++) {
 		int x = rand() % 800;  
 		int y = rand() % 600;  
-		fishes[i] = Fish(x, y);
+		fishes[i].SetCordinates((float)x,(float)y);
 	}
-	fishes[0] = Fish(0, 0);
+
 
 	/*Fish* dev_fishes;
 	float* dev_vertices;
@@ -187,8 +196,12 @@ int main()
 
 	
 	
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
+
+	glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
@@ -230,7 +243,7 @@ int main()
 
 		for (int i = 0; i < n; i++) {
 			fishes[i].UpdatePositionKernel(fishes, n, currentTime-lastTime, mouseX, mouseY);
-			fishes[i].SetVertexes(vertices + 9 * i);
+			fishes[i].SetVertexes(vertices + 12 * i);
 		}
 
 		//_sleep(10);
