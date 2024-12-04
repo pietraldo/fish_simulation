@@ -101,43 +101,96 @@ public:
 		newVy = closeDy / (float)neighbors.size();
 	}
 
+	void CalculateAligmentVelocity(vector<Fish*> const& neighbors, float& newVx, float& newVy) const
+	{
+		float avgVx = 0;
+		float avgVy = 0;
+		for (Fish const* neighbor : neighbors)
+		{
+			avgVx += neighbor->vx;
+			avgVy += neighbor->vy;
+		}
+		newVx = avgVx / (float)neighbors.size();
+		newVy = avgVy / (float)neighbors.size();
+	}
+
+	void CalculateCohesionVelocity(vector<Fish*> const& neighbors, float& newVx, float& newVy) const
+	{
+		float avgX = 0;
+		float avgY = 0;
+		for (Fish const* neighbor : neighbors)
+		{
+			avgX += neighbor->x;
+			avgY += neighbor->y;
+		}
+		newVx = avgX / (float)neighbors.size();
+		newVy = avgY / (float)neighbors.size();
+	}
+
 	void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY) {
 
 
-		newVx = rand() % 100 - 50;
-		newVy = rand() % 100 - 50;
+		float avoidDistance = 20;
+		float avoidAngle = 359;
 
-		
+		float aligmentDistance = 100;
+		float aligmentAngle = 180;
 
-		float distance = 50;
-		float angle = 359;
+		float cohesionDistance = 120;
+		float cohesionAngle = 240;
 
+		float aligmentWeight = 0.5;
+		float cohesionWeight = 0.8;
+		float avoidWeight = 1.9;
+
+		// coloring fishes
 		if (id == 0)
 		{
 			for (int i = 0; i < n; i++)
 				fishes[i].colorId = 1;
 			colorId = 0;
 
-			vector<Fish*> avoidNeighbors = GetNeighbors(fishes, n, distance, angle);
+			vector<Fish*> avoidNeighbors = GetNeighbors(fishes, n, avoidDistance, avoidAngle);
 			for (int i = 0; i < avoidNeighbors.size(); i++)
 				avoidNeighbors[i]->colorId = 2;
 		}
 
-		vector<Fish*> avoidNeighbors = GetNeighbors(fishes, n, distance, angle);
-		CalculateAvoidVelocity(avoidNeighbors, newVx, newVy);
 
-		// handle existing bounds
+
+		float avoidVelocityX = 0;
+		float avoidVelocityY = 0;
+		vector<Fish*> avoidNeighbors = GetNeighbors(fishes, n, avoidDistance, avoidAngle);
+		CalculateAvoidVelocity(avoidNeighbors, avoidVelocityX, avoidVelocityY);
+
+
+
+		float aligmentVelocityX = 0;
+		float aligmentVelocityY = 0;
+		vector<Fish*> aligmentNeighbors = GetNeighbors(fishes, n, aligmentDistance, aligmentAngle);
+		CalculateAligmentVelocity(aligmentNeighbors, aligmentVelocityX, aligmentVelocityY);
+
+		float cohesionVelocityX = 0;
+		float cohesionVelocityY = 0;
+		vector<Fish*> cohesionNeighbors = GetNeighbors(fishes, n, cohesionDistance, cohesionAngle);
+		CalculateCohesionVelocity(cohesionNeighbors, cohesionVelocityX, cohesionVelocityY);
+
+		
+
+		newVx = aligmentWeight * aligmentVelocityX + cohesionWeight * cohesionVelocityX + avoidWeight * avoidVelocityX;
+		newVy = aligmentWeight * aligmentVelocityY + cohesionWeight * cohesionVelocityY + avoidWeight * avoidVelocityY;
+
 		if (x < 100 || x>700 || y < 100 || y>500)
 		{
 			newVx = 400 - x;
 			newVy = 300 - y;
+			normalize(newVx, newVy);
+			vx = newVx;
+			vy = newVy;
 		}
 
 		normalize(newVx, newVy);
 		newVx *= Speed;
-		newVy *= Speed;
-		//std::cout << x << " " << y << std::endl;
-
+		newVy *= Speed; 
 	}
 
 	void ChangeVelocity(float newVx, float newVy, float dt)
