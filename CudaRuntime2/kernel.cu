@@ -7,6 +7,7 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include <cuda_gl_interop.h>
+#include <vector>
 
 #include "Fish.h"
 
@@ -20,6 +21,9 @@ const unsigned int MESH_SIZE = 100;
 
 const unsigned int NUM_FISH = 2000;
 const unsigned int BLOCK_SIZE = 1000;
+
+const int num_rows = SCR_HEIGHT / MESH_SIZE;
+const int num_cols = SCR_WIDTH / MESH_SIZE;
 
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
@@ -45,20 +49,25 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "}\n\0";
 
 
-__global__ void calculatePositionKernel(Fish* fishes, float dt, float* vertices, const int n) {
+__global__ void calculatePositionKernel(Fish* fishes,int* dev_indexes,int* dev_headsIndex,const int num_squares, float dt, float* vertices, const int n) {
 	int i = threadIdx.x + BLOCK_SIZE * blockIdx.x;
-	fishes[i].UpdatePositionKernel(fishes, n, dt, 0, 0, 4000, 50.6, 0.3);
+	fishes[i].UpdatePositionKernel(fishes, n,  dev_indexes, dev_headsIndex, num_squares, dt, 0, 0, 4000, 50.6, 0.3);
 	fishes[i].SetVertexes(vertices + 12 * i);
 }
 
-//__global__ int calculateIndexOfMesh(float x, float y) {
-//	int num_rows = SCR_HEIGHT / MESH_SIZE;
-//	int num_cols = SCR_WIDTH / MESH_SIZE;
-//
-//	int row = y / num_rows;
-//	int col = x / num_cols;
-//	return  row * num_cols + col;
-//}
+ int calculateIndexOfMesh(float x, float y) {
+	int row = y / MESH_SIZE;
+	int col = x / MESH_SIZE;
+	if (x >= SCR_WIDTH)
+		col = num_cols - 1;
+	if (y >= SCR_HEIGHT)
+		row = num_rows - 1;
+	if (x < 0)
+		col = 0;
+	if (y < 0)
+		row = 0;
+	return  row * num_cols + col;
+}
 
 int mouseX = 0;
 int mouseY = 0;
@@ -103,6 +112,9 @@ struct ListNode {
 
 int main()
 {
+
+	
+
 	// glfw: initialize and configure
 	// ------------------------------
 	glfwInit();
@@ -222,6 +234,37 @@ int main()
 		goto Error;
 	}
 
+	const int num_squares = num_rows * num_cols;
+	int indexes[n];
+	int headsIndex[num_squares];
+
+	int* dev_indexes;
+	int* dev_headsIndex;
+
+	cudaStatus = cudaMalloc((void**)&dev_indexes, n * sizeof(int));
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudamalloc failed!");
+		goto Error;
+	}
+
+	cudaStatus = cudaMemcpy(dev_indexes, indexes, n * sizeof(int), cudaMemcpyHostToDevice);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudamemcpy failed!");
+		goto Error;
+	}
+
+	cudaStatus = cudaMalloc((void**)&dev_headsIndex, num_squares * sizeof(int));
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudamalloc failed!");
+		goto Error;
+	}
+
+	cudaStatus = cudaMemcpy(dev_headsIndex, headsIndex, num_squares * sizeof(int), cudaMemcpyHostToDevice);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudamemcpy failed!");
+		goto Error;
+	}
+
 	/*int* dev_heads;
 	cudaStatus = cudaMalloc((void**)&dev_heads, n * sizeof(int));
 	if (cudaStatus != cudaSuccess) {
@@ -264,6 +307,10 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
+
+	
+
+
 	// render loop
 	// -----------
 	double lastTime = glfwGetTime();
@@ -283,10 +330,59 @@ int main()
 
 		size_t num_bytes;
 
-		cudaGraphicsMapResources(1, &cudaVBO, 0);
+		cudaStatus = cudaGraphicsMapResources(1, &cudaVBO, 0);
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudaGraphicsMapResources failed: %s\n", cudaGetErrorString(cudaStatus));
+			goto Error;
+		}
+
 		cudaGraphicsResourceGetMappedPointer((void**)&dev_vertices, &num_bytes, cudaVBO);
 
-		calculatePositionKernel << <NUM_FISH/BLOCK_SIZE, BLOCK_SIZE >> > (dev_fishes, currentTime - lastTime, dev_vertices, n);
+		// making lists for each mesh
+		cudaStatus = cudaMemcpy(fishes, dev_fishes, n * sizeof(Fish), cudaMemcpyDeviceToHost);
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudaMemcpy failed!");
+			goto Error;
+		}
+
+		
+		vector<vector<int>> heads(num_squares);
+		for (int i = 0; i < num_squares; i++)
+			heads[i] = {};
+
+		heads[0].push_back(1);
+		for (int i = 0; i < n; i++) {
+			int index = calculateIndexOfMesh(fishes[i].GetX(), fishes[i].GetY());
+			heads[index].push_back(i);
+		}
+		
+		for (int i = 0; i < num_squares; i++) {
+			headsIndex[i] = -1;
+		}
+
+		int index = 0;
+		for (int i = 0; i < num_squares; i++) {
+			for (int j = 0; j < heads[i].size(); j++) {
+				if (j == 0)
+					headsIndex[i] = j;
+				indexes[index++] = heads[i][j];
+			}
+		}
+
+		cudaStatus = cudaMemcpy(dev_indexes, indexes, n * sizeof(int), cudaMemcpyHostToDevice);
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudamemcpy failed!");
+			goto Error;
+		}
+
+		cudaStatus = cudaMemcpy(dev_headsIndex, headsIndex, num_squares * sizeof(int), cudaMemcpyHostToDevice);
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudamemcpy failed!");
+			goto Error;
+		}
+
+
+		calculatePositionKernel << <NUM_FISH/BLOCK_SIZE, BLOCK_SIZE >> > (dev_fishes, dev_indexes, dev_headsIndex,num_squares, currentTime - lastTime, dev_vertices, n);
 		cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "calculatePositionKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
@@ -311,7 +407,7 @@ int main()
 		cudaGraphicsUnmapResources(1, &cudaVBO, 0);
 
 		glUseProgram(shaderProgram);
-		glBindVertexArray(VBO);
+		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, n * 3);
 
 		glfwSwapBuffers(window);

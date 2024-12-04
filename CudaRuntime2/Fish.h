@@ -59,6 +59,14 @@ public:
 		colorId = (id == 0) ? 0 : 1;
 	}
 
+	__host__ __device__ float GetX() const {
+		return x;
+	}
+
+	__host__ __device__ float GetY() const {
+		return y;
+	}
+
 	__host__ __device__  void SetCordinates(float x, float y) {
 		this->x = x;
 		this->y = y;
@@ -214,10 +222,10 @@ public:
 	}
 
 	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY, float aligmentWeight, float cohesionWeight, float avoidWeight) {
-		if (blockIdx.x == 0)
-			colorId = 1;
+		/*if (blockIdx.x == 0)
+			colorId = 2;
 		else
-			colorId = 0;
+			colorId = 0;*/
 
 		float avoidDistance = 10;
 		float avoidAngle = 359;
@@ -318,7 +326,7 @@ public:
 		vy = newVy2;
 	}
 
-	__host__ __device__ void UpdatePositionKernel(Fish* fishes, int n, float dt, int mouseX, int mouseY, float avoidWeight, float alignWeight, float cohesionWeight) {
+	__host__ __device__ void UpdatePositionKernel(Fish* fishes, int n,  int* dev_indexes, int* dev_headsIndex, const int num_squares, float dt, int mouseX, int mouseY, float avoidWeight, float alignWeight, float cohesionWeight) {
 
 		float newVx;
 		float newVy;
