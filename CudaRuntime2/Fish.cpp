@@ -1,5 +1,5 @@
 #include "Fish.h"
 
-float Fish::Speed = 100.0f;
-float Fish::MaxChangeOfDegreePerSecond =2000.0f;
-int Fish::FishId =0;
+//__device__ float Fish::Speed = 100.0f;
+//__device__ float Fish::MaxChangeOfDegreePerSecond = 2000.0f;
+//__device__ int Fish::FishId = 0;

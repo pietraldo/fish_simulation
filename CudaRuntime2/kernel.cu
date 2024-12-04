@@ -41,11 +41,11 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "}\n\0";
 
 
-//__global__ void calculatePositionKernel(Fish* fishes, float dt, float* vertices,const int n) {
-//	int i = threadIdx.x;
-//	fishes[i].UpdatePositionKernel(fishes, n,dt);
-//	fishes[i].SetVertexes(vertices+9*i);
-//}
+__global__ void calculatePositionKernel(Fish* fishes, float dt, float* vertices,const int n) {
+	int i = threadIdx.x;
+	fishes[i].UpdatePositionKernel(fishes, n,dt,0,0,4000,50.6,0.3);
+	fishes[i].SetVertexes(vertices+12*i);
+}
 
 
 int mouseX = 0;
@@ -162,7 +162,7 @@ int main()
 
 
 
-	const int n = 1000;
+	const int n = 10;
 	float vertices[n * 12] = {0};
 
 	Fish* fishes= new Fish[n];
@@ -171,38 +171,39 @@ int main()
 		int y = rand() % 600;  
 		fishes[i].SetCordinates((float)x,(float)y);
 	}
-	fishes[0].SetCordinates(400, 300);
+	
 
-	/*Fish* dev_fishes;
+	Fish* dev_fishes;
 	float* dev_vertices;
 	
 	cudaError_t cudaStatus = cudaSetDevice(0);
 	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaSetDevice failed!  Do you have a CUDA-capable GPU installed?");
+		fprintf(stderr, "cudasetdevice failed!  do you have a cuda-capable gpu installed?");
 		return 1;
 	}
 
-	cudaStatus = cudaMalloc((void**)&dev_vertices, n * sizeof(float) * 9);
+	
+	cudaStatus = cudaMalloc((void**)&dev_vertices, n * sizeof(float) * 12);
 	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMalloc failed!");
+		fprintf(stderr, "cudamalloc failed!");
 		goto Error;
 	}
-	cudaStatus = cudaMemcpy(dev_vertices, vertices, n * sizeof(float) * 9, cudaMemcpyHostToDevice);
+	cudaStatus = cudaMemcpy(dev_vertices, vertices, n * sizeof(float) * 12, cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMemcpy failed!");
+		fprintf(stderr, "cudamemcpy failed!");
 		goto Error;
 	}
 
 	cudaStatus = cudaMalloc((void**)&dev_fishes, n * sizeof(Fish));
 	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMalloc failed!");
+		fprintf(stderr, "cudamalloc failed!");
 		goto Error;
 	}
 	cudaStatus = cudaMemcpy(dev_fishes, fishes, n * sizeof(Fish), cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudaMemcpy failed!");
+		fprintf(stderr, "cudamemcpy failed!");
 		goto Error;
-	}*/
+	}
 
 	
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
@@ -244,7 +245,7 @@ int main()
 
 		double currentTime = glfwGetTime();
 
-		/*calculatePositionKernel <<<1, n >>> (dev_fishes,currentTime-lastTime, dev_vertices,n);
+		calculatePositionKernel <<<1, n >>> (dev_fishes,currentTime-lastTime, dev_vertices,n);
 		cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "calculatePositionKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
@@ -257,16 +258,16 @@ int main()
 			goto Error;
 		}
 
-		cudaStatus = cudaMemcpy(vertices, dev_vertices, n* sizeof(float)*9, cudaMemcpyDeviceToHost);
+		cudaStatus = cudaMemcpy(vertices, dev_vertices, n* sizeof(float)*12, cudaMemcpyDeviceToHost);
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "cudaMemcpy failed!");
 			goto Error;
-		}*/
+		}
 
-		for (int i = 0; i < n; i++) {
+		/*for (int i = 0; i < n; i++) {
 			fishes[i].UpdatePositionKernel(fishes, n, currentTime-lastTime, mouseX, mouseY, alignWeight, cohesionWeight, avoidWeight);
 			fishes[i].SetVertexes(vertices + 12 * i);
-		}
+		}*/
 
 		//_sleep(10);
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -285,7 +286,7 @@ int main()
 	}
 
 
-//Error:
+Error:
 	// glfw: terminate, clearing all previously allocated GLFW resources.
 	// ------------------------------------------------------------------
 	glfwTerminate();

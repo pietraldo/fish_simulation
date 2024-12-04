@@ -22,50 +22,53 @@ private:
 	float vx = 1;
 	float vy = 0.4;
 
-	static float Speed;
-	static float MaxChangeOfDegreePerSecond;
+	/*__host__ __device__  static float Speed;
+	__host__ __device__  static float MaxChangeOfDegreePerSecond;
 
-	static int FishId;
-	int id;
+	__host__ __device__  static int FishId;*/
+	float Speed = 10.0f;
+	float MaxChangeOfDegreePerSecond = 200.0f;
+	int id=1;
+
 public:
 	float colorId = 0;
 
-	Fish() : x(0), y(0) {
+	__host__ __device__  Fish() : x(0), y(0) {
 		vx = rand() % 100 - 50;
 		vy = rand() % 100 - 50;
 		normalize(vx, vy);
 		vx = vx * Speed;
 		vy = vy * Speed;
-		id = FishId++;
+		//id = FishId++;
 		colorId = (id == 0) ? 0 : 1;
 	}
 
-	Fish(float x, float y) :x(x), y(y) {
+	__host__ __device__  Fish(float x, float y) :x(x), y(y) {
 
 		vx = rand() % 100 - 50;
 		vy = rand() % 100 - 50;
 		normalize(vx, vy);
 		vx = vx * Speed;
 		vy = vy * Speed;
-		id = FishId++;
+		//id = FishId++;
 		colorId = (id == 0) ? 0 : 1;
 	}
 
-	void SetCordinates(float x, float y) {
+	__host__ __device__  void SetCordinates(float x, float y) {
 		this->x = x;
 		this->y = y;
 	}
 
-	__device__  char CheckPointSide(float x1, float y1, float x2, float y2, float px, float py) const {
+	__host__ __device__  char CheckPointSide(float x1, float y1, float x2, float y2, float px, float py) const {
 		float value = (x2 - x1) * (py - y1) - (y2 - y1) * (px - x1);
 		return (value > 0) ? 'L' : 'R';
 	}
 
-	float Distance(const Fish& fish) const {
+	__host__ __device__ float Distance(const Fish& fish) const {
 		return sqrt((x - fish.x) * (x - fish.x) + (y - fish.y) * (y - fish.y));
 	}
 
-	bool Angle(float angle, const Fish& fish) const {
+	__host__ __device__ bool Angle(float angle, const Fish& fish) const {
 		float direction = atan2(vy, vx) * 180 / M_PI;
 		float fishAngle = atan2(fish.y - y, fish.x - x) * 180 / M_PI;
 
@@ -81,36 +84,41 @@ public:
 		return false;
 	}
 
-	vector<Fish*> GetNeighbors(Fish* fishes, int n, float distance, float angle) {
-		vector<Fish*> neighbors;
+	__host__ __device__ int GetNeighbors(Fish* fishes, int n, float distance, float angle, Fish** neighbors) {
+		int count = 0;
 
 		for (int i = 0; i < n; i++) {
-			if (id == fishes[i].id)
+			if (this == &fishes[i])
 				continue;
 			if (Distance(fishes[i]) < distance && Angle(angle, fishes[i])) {
-				neighbors.push_back(&fishes[i]);
+				neighbors[count++]=&fishes[i];
 			}
 		}
-		return neighbors;
+		return count;
 	}
 
-	void CalculateAvoidVelocity(vector<Fish*> const& neighbors, float& newVx, float& newVy) const
+	__host__ __device__ void CalculateAvoidVelocity(Fish** neighbors, int n, float& newVx, float& newVy) const
 	{
+		if (n <= 0)
+		{
+			newVx = 0;
+			newVy = 0;
+			return;
+		}
+
 		float closeDx = 0;
 		float closeDy = 0;
-		for (Fish const* neighbor : neighbors)
+		for (int i=0; i<n;i++)
 		{
-			closeDx += x - neighbor->x;
-			closeDy += y - neighbor->y;
+			closeDx += x - neighbors[i]->x;
+			closeDy += y - neighbors[i]->y;
 		}
-		if (neighbors.size() > 0)
-		{
-			newVx = closeDx / (float)neighbors.size();
-			newVy = closeDy / (float)neighbors.size();
-		}
+		
+		newVx = closeDx / n;
+		newVy = closeDy / n;
 	}
 
-	void CalculateAligmentVelocity(vector<Fish*> const& neighbors, float& newVx, float& newVy) const
+	__host__ __device__ void CalculateAligmentVelocity(vector<Fish*> const& neighbors, float& newVx, float& newVy) const
 	{
 		float avgVx = 0;
 		float avgVy = 0;
@@ -126,7 +134,7 @@ public:
 		}
 	}
 
-	void CalculateCohesionVelocity(vector<Fish*> const& neighbors, float& newVx, float& newVy) const
+	__host__ __device__ void CalculateCohesionVelocity(vector<Fish*> const& neighbors, float& newVx, float& newVy) const
 	{
 		float avgX = 0;
 		float avgY = 0;
@@ -142,7 +150,7 @@ public:
 		}
 	}
 
-	void CalculateObsticleAvoidance(float& newVx, float& newVy)
+	__host__ __device__ void CalculateObsticleAvoidance(float& newVx, float& newVy)
 	{
 		//float avoidanceRange = 50;
 
@@ -190,10 +198,10 @@ public:
 		
 	}
 
-	void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY , float aligmentWeight, float cohesionWeight, float avoidWeight) {
+	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY , float aligmentWeight, float cohesionWeight, float avoidWeight) {
 
 
-		float avoidDistance = 10;
+		float avoidDistance = 100;
 		float avoidAngle = 359;
 
 		float aligmentDistance = 30;
@@ -207,7 +215,7 @@ public:
 		//float avoidWeight = 2.9;
 
 		// coloring fishes
-		if (id == 0)
+		/*if (id == 0)
 		{
 			for (int i = 0; i < n; i++)
 				fishes[i].colorId = 1;
@@ -216,33 +224,37 @@ public:
 			vector<Fish*> avoidNeighbors = GetNeighbors(fishes, n, avoidDistance, avoidAngle);
 			for (int i = 0; i < avoidNeighbors.size(); i++)
 				avoidNeighbors[i]->colorId = 2;
-		}
+		}*/
 
 
 
 		float avoidVelocityX = 0;
 		float avoidVelocityY = 0;
-		vector<Fish*> avoidNeighbors = GetNeighbors(fishes, n, avoidDistance, avoidAngle);
-		CalculateAvoidVelocity(avoidNeighbors, avoidVelocityX, avoidVelocityY);
+
+		Fish* avoidNeighbors[100];
+
+		int count = GetNeighbors(fishes, n, avoidDistance, avoidAngle,avoidNeighbors);
+		CalculateAvoidVelocity(avoidNeighbors, count, avoidVelocityX, avoidVelocityY);
 
 
 
 		float aligmentVelocityX = 0;
 		float aligmentVelocityY = 0;
-		vector<Fish*> aligmentNeighbors = GetNeighbors(fishes, n, aligmentDistance, aligmentAngle);
-		CalculateAligmentVelocity(aligmentNeighbors, aligmentVelocityX, aligmentVelocityY);
+		/*vector<Fish*> aligmentNeighbors = GetNeighbors(fishes, n, aligmentDistance, aligmentAngle);
+		CalculateAligmentVelocity(aligmentNeighbors, aligmentVelocityX, aligmentVelocityY);*/
 
 		float cohesionVelocityX = 0;
 		float cohesionVelocityY = 0;
-		vector<Fish*> cohesionNeighbors = GetNeighbors(fishes, n, cohesionDistance, cohesionAngle);
+		/*vector<Fish*> cohesionNeighbors = GetNeighbors(fishes, n, cohesionDistance, cohesionAngle);
 		CalculateCohesionVelocity(cohesionNeighbors, cohesionVelocityX, cohesionVelocityY);
 
-		
+		*/
 
 		newVx = aligmentWeight * aligmentVelocityX + cohesionWeight * cohesionVelocityX + avoidWeight * avoidVelocityX;
 		newVy = aligmentWeight * aligmentVelocityY + cohesionWeight * cohesionVelocityY + avoidWeight * avoidVelocityY;
 
 		CalculateObsticleAvoidance(newVx, newVy);
+		
 
 		normalize(newVx, newVy);
 		newVx *= Speed;
@@ -251,10 +263,12 @@ public:
 		{
 			newVx = vx;
 			newVy = vy;
+			
 		}
+		colorId = (count > 0) ? 2 : 1;
 	}
 
-	void ChangeVelocity(float newVx, float newVy, float dt)
+	__host__ __device__ void ChangeVelocity(float newVx, float newVy, float dt)
 	{
 		float desiredDegree = atan2(newVy, newVx) * 180 / M_PI;
 		float currentDegree = atan2(vy, vx) * 180 / M_PI;
@@ -286,7 +300,7 @@ public:
 		vy = newVy2;
 	}
 
-	void UpdatePositionKernel(Fish* fishes, int n, float dt, int mouseX, int mouseY, float alignWeight, float cohesionWeight, float avoidWeight) {
+	__host__ __device__ void UpdatePositionKernel(Fish* fishes, int n, float dt, int mouseX, int mouseY, float alignWeight, float cohesionWeight, float avoidWeight) {
 
 		float newVx;
 		float newVy;
