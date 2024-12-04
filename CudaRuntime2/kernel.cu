@@ -141,7 +141,7 @@ int main()
 
 
 
-	const int n = 100;
+	const int n = 1;
 	float vertices[n * 12] = {0};
 
 	Fish* fishes= new Fish[n];

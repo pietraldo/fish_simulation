@@ -33,6 +33,9 @@ public:
 	Fish() : x(0), y(0) {
 		vx = rand() % 100 - 50;
 		vy = rand() % 100 - 50;
+		normalize(vx, vy);
+		vx = vx * Speed;
+		vy = vy * Speed;
 		id = FishId++;
 		colorId = (id == 0) ? 0 : 1;
 	}
@@ -41,6 +44,9 @@ public:
 
 		vx = rand() % 100 - 50;
 		vy = rand() % 100 - 50;
+		normalize(vx, vy);
+		vx = vx * Speed;
+		vy = vy * Speed;
 		id = FishId++;
 		colorId = (id == 0) ? 0 : 1;
 	}
@@ -92,13 +98,16 @@ public:
 	{
 		float closeDx = 0;
 		float closeDy = 0;
-		for (Fish const* neighbor:neighbors)
+		for (Fish const* neighbor : neighbors)
 		{
 			closeDx += x - neighbor->x;
 			closeDy += y - neighbor->y;
 		}
-		newVx = closeDx / (float)neighbors.size();
-		newVy = closeDy / (float)neighbors.size();
+		if (neighbors.size() > 0)
+		{
+			newVx = closeDx / (float)neighbors.size();
+			newVy = closeDy / (float)neighbors.size();
+		}
 	}
 
 	void CalculateAligmentVelocity(vector<Fish*> const& neighbors, float& newVx, float& newVy) const
@@ -110,8 +119,11 @@ public:
 			avgVx += neighbor->vx;
 			avgVy += neighbor->vy;
 		}
-		newVx = avgVx / (float)neighbors.size();
-		newVy = avgVy / (float)neighbors.size();
+		if (neighbors.size() > 0)
+		{
+			newVx = avgVx / (float)neighbors.size();
+			newVy = avgVy / (float)neighbors.size();
+		}
 	}
 
 	void CalculateCohesionVelocity(vector<Fish*> const& neighbors, float& newVx, float& newVy) const
@@ -123,8 +135,43 @@ public:
 			avgX += neighbor->x;
 			avgY += neighbor->y;
 		}
-		newVx = avgX / (float)neighbors.size();
-		newVy = avgY / (float)neighbors.size();
+		if (neighbors.size() > 0)
+		{
+			newVx = avgX / (float)neighbors.size();
+			newVy = avgY / (float)neighbors.size();
+		}
+	}
+
+	void CalculateObsticleAvoidance(float& newVx, float& newVy)
+	{
+		float avoidanceRange = 50;
+
+		// check if it is good direction
+		float dirX = newVx;
+		float dirY = newVy;
+
+		normalize(dirX, dirY);
+		dirX *= avoidanceRange;
+		dirY *= avoidanceRange;
+
+		// no colicion good to return
+		if (x + dirX > 0 && x + dirX < 800 && y + dirY>0 && y + dirY < 600) return;
+
+		cout<<"colision "<<dirX<<" "<<dirY << endl;
+		newVx = 0;
+		newVy = 0;
+
+		/*float dirX = vx;
+		float dirY = vy;
+
+		normalize(dirX, dirY);
+		dirX *= avoidanceRange;
+		dirY *= avoidanceRange;
+
+		while(x + dirX > 700)
+		{
+			
+		}*/
 	}
 
 	void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY) {
@@ -179,18 +226,14 @@ public:
 		newVx = aligmentWeight * aligmentVelocityX + cohesionWeight * cohesionVelocityX + avoidWeight * avoidVelocityX;
 		newVy = aligmentWeight * aligmentVelocityY + cohesionWeight * cohesionVelocityY + avoidWeight * avoidVelocityY;
 
-		if (x < 100 || x>700 || y < 100 || y>500)
-		{
-			newVx = 400 - x;
-			newVy = 300 - y;
-			normalize(newVx, newVy);
-			vx = newVx;
-			vy = newVy;
-		}
-
 		normalize(newVx, newVy);
 		newVx *= Speed;
 		newVy *= Speed; 
+		if (newVx == 0 && newVy == 0)
+		{
+			newVx = vx;
+			newVy = vy;
+		}
 	}
 
 	void ChangeVelocity(float newVx, float newVy, float dt)
@@ -230,8 +273,10 @@ public:
 		float newVx;
 		float newVy;
 		CalculateDesiredVelocity(fishes, n, newVx, newVy, mouseX, mouseY);
-
+		
 		ChangeVelocity(newVx, newVy, dt);
+
+		CalculateObsticleAvoidance(newVx, newVy);
 
 		x += vx * dt;
 		y += vy * dt;
@@ -242,10 +287,10 @@ public:
 	}
 
 	__host__ __device__ void normalize(float& x, float& y) {
-		float mag = sqrtf(x * x + y * y);
-		if (mag > 0) {
-			x = x / mag;
-			y = y / mag;
+		float len = sqrtf(x * x + y * y);
+		if (len > 0) {
+			x = x / len;
+			y = y / len;
 		}
 	}
 
