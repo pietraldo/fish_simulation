@@ -14,7 +14,7 @@ using namespace std;
 
 class Fish
 {
-	
+
 private:
 	float x;
 	float y;
@@ -24,20 +24,20 @@ private:
 
 	static float Speed;
 	static float MaxChangeOfDegreePerSecond;
-	
+
 	static int FishId;
 	int id;
 public:
 	float colorId = 0;
 
-	Fish(): x(0), y(0){
-		vx = rand() % 100-50;
-		vy = rand() % 100-50;
+	Fish() : x(0), y(0) {
+		vx = rand() % 100 - 50;
+		vy = rand() % 100 - 50;
 		id = FishId++;
 		colorId = (id == 0) ? 0 : 1;
 	}
 
-	Fish(float x, float y):x(x), y(y){	
+	Fish(float x, float y) :x(x), y(y) {
 
 		vx = rand() % 100 - 50;
 		vy = rand() % 100 - 50;
@@ -61,7 +61,7 @@ public:
 
 	bool Angle(float angle, const Fish& fish) const {
 		float direction = atan2(vy, vx) * 180 / M_PI;
-		float fishAngle = atan2(fish.y-y, fish.x-x) * 180 / M_PI;
+		float fishAngle = atan2(fish.y - y, fish.x - x) * 180 / M_PI;
 
 		float degreeDifference = fabs(direction - fishAngle);
 
@@ -75,7 +75,7 @@ public:
 		return false;
 	}
 
-	vector<Fish*> GetNeighbors(Fish* fishes,int n, float distance, float angle) {
+	vector<Fish*> GetNeighbors(Fish* fishes, int n, float distance, float angle) {
 		vector<Fish*> neighbors;
 
 		for (int i = 0; i < n; i++) {
@@ -88,44 +88,56 @@ public:
 		return neighbors;
 	}
 
-	void CalculateAvoidVelocity(vector<Fish> fishes, float& newVx, float& newVy)
+	void CalculateAvoidVelocity(vector<Fish*> const& neighbors, float& newVx, float& newVy) const
 	{
-		
-		
+		float closeDx = 0;
+		float closeDy = 0;
+		for (Fish const* neighbor:neighbors)
+		{
+			closeDx += x - neighbor->x;
+			closeDy += y - neighbor->y;
+		}
+		newVx = closeDx / (float)neighbors.size();
+		newVy = closeDy / (float)neighbors.size();
 	}
 
 	void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY) {
-		
-		
-		newVx = rand() % 100-50;
-		newVy = rand() % 100-50;
 
-		if (x < 100 || x>700 || y < 100 || y>500)
-		{
-			newVx = 400 - x;
-			newVy = 300 - y;
-		}
+
+		newVx = rand() % 100 - 50;
+		newVy = rand() % 100 - 50;
+
 		
-		float distance = 200;
-		float angle = 260;
-		
+
+		float distance = 50;
+		float angle = 359;
+
 		if (id == 0)
 		{
 			for (int i = 0; i < n; i++)
 				fishes[i].colorId = 1;
 			colorId = 0;
-			
+
 			vector<Fish*> avoidNeighbors = GetNeighbors(fishes, n, distance, angle);
 			for (int i = 0; i < avoidNeighbors.size(); i++)
 				avoidNeighbors[i]->colorId = 2;
 		}
-		//CalculateAvoidVelocity(avoidNeighbors, newVx, newVy);
+
+		vector<Fish*> avoidNeighbors = GetNeighbors(fishes, n, distance, angle);
+		CalculateAvoidVelocity(avoidNeighbors, newVx, newVy);
+
+		// handle existing bounds
+		if (x < 100 || x>700 || y < 100 || y>500)
+		{
+			newVx = 400 - x;
+			newVy = 300 - y;
+		}
 
 		normalize(newVx, newVy);
 		newVx *= Speed;
 		newVy *= Speed;
 		//std::cout << x << " " << y << std::endl;
-		
+
 	}
 
 	void ChangeVelocity(float newVx, float newVy, float dt)
@@ -133,16 +145,16 @@ public:
 		float desiredDegree = atan2(newVy, newVx) * 180 / M_PI;
 		float currentDegree = atan2(vy, vx) * 180 / M_PI;
 
-		
+
 		float degreeDifference = fabs(desiredDegree - currentDegree);
 		int signOfDegree = sign(desiredDegree - currentDegree);
-		
+
 		if (degreeDifference > 180)
 		{
 			degreeDifference = 360 - degreeDifference;
 			signOfDegree = -signOfDegree;
 		}
-			
+
 		float maxChangeOfDegree = MaxChangeOfDegreePerSecond * dt;
 
 		if (degreeDifference < maxChangeOfDegree)
@@ -151,7 +163,7 @@ public:
 			vy = newVy;
 			return;
 		}
-		
+
 		float newDegree = currentDegree + signOfDegree * maxChangeOfDegree;
 		float newVx2 = cos(newDegree * M_PI / 180) * Speed;
 		float newVy2 = sin(newDegree * M_PI / 180) * Speed;
@@ -164,8 +176,8 @@ public:
 
 		float newVx;
 		float newVy;
-		CalculateDesiredVelocity(fishes,n,newVx, newVy, mouseX, mouseY);
-		
+		CalculateDesiredVelocity(fishes, n, newVx, newVy, mouseX, mouseY);
+
 		ChangeVelocity(newVx, newVy, dt);
 
 		x += vx * dt;
