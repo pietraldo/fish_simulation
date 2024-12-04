@@ -10,6 +10,7 @@
 #include <cmath>
 #include <vector>
 
+
 using namespace std;
 
 class Fish
@@ -26,9 +27,9 @@ private:
 	__host__ __device__  static float MaxChangeOfDegreePerSecond;
 
 	__host__ __device__  static int FishId;*/
-	float Speed = 10.0f;
+	float Speed = 100.0f;
 	float MaxChangeOfDegreePerSecond = 200.0f;
-	int id=1;
+	int id = 1;
 
 public:
 	float colorId = 0;
@@ -91,7 +92,7 @@ public:
 			if (this == &fishes[i])
 				continue;
 			if (Distance(fishes[i]) < distance && Angle(angle, fishes[i])) {
-				neighbors[count++]=&fishes[i];
+				neighbors[count++] = &fishes[i];
 			}
 		}
 		return count;
@@ -108,46 +109,56 @@ public:
 
 		float closeDx = 0;
 		float closeDy = 0;
-		for (int i=0; i<n;i++)
+		for (int i = 0; i < n; i++)
 		{
 			closeDx += x - neighbors[i]->x;
 			closeDy += y - neighbors[i]->y;
 		}
-		
+
 		newVx = closeDx / n;
 		newVy = closeDy / n;
 	}
 
-	__host__ __device__ void CalculateAligmentVelocity(vector<Fish*> const& neighbors, float& newVx, float& newVy) const
+	__host__ __device__ void CalculateAligmentVelocity(Fish** neighbors, int n, float& newVx, float& newVy) const
 	{
+		if (n <= 0)
+		{
+			newVx = 0;
+			newVy = 0;
+			return;
+		}
 		float avgVx = 0;
 		float avgVy = 0;
-		for (Fish const* neighbor : neighbors)
+		for (int i = 0; i < n; i++)
 		{
-			avgVx += neighbor->vx;
-			avgVy += neighbor->vy;
+			avgVx += neighbors[i]->vx;
+			avgVy += neighbors[i]->vy;
 		}
-		if (neighbors.size() > 0)
-		{
-			newVx = avgVx / (float)neighbors.size();
-			newVy = avgVy / (float)neighbors.size();
-		}
+
+		newVx = avgVx / n;
+		newVy = avgVy / n;
+
 	}
 
-	__host__ __device__ void CalculateCohesionVelocity(vector<Fish*> const& neighbors, float& newVx, float& newVy) const
+	__host__ __device__ void CalculateCohesionVelocity(Fish** neighbors, int n, float& newVx, float& newVy) const
 	{
+		if (n <= 0)
+		{
+			newVx = 0;
+			newVy = 0;
+			return;
+		}
 		float avgX = 0;
 		float avgY = 0;
-		for (Fish const* neighbor : neighbors)
+		for (int i = 0; i < n; i++)
 		{
-			avgX += neighbor->x;
-			avgY += neighbor->y;
+			avgX += neighbors[i]->x;
+			avgY += neighbors[i]->y;
 		}
-		if (neighbors.size() > 0)
-		{
-			newVx = avgX / (float)neighbors.size();
-			newVy = avgY / (float)neighbors.size();
-		}
+
+		newVx = avgX / n;
+		newVy = avgY / n;
+
 	}
 
 	__host__ __device__ void CalculateObsticleAvoidance(float& newVx, float& newVy)
@@ -180,14 +191,14 @@ public:
 
 		while(x + dirX > 700)
 		{
-			
+
 		}*/
 		/*if (sqrt((x - 400) * (x - 400) + (300 - y) * (300 - y)) > 300)
 		{
 			newVx = 400 - x;
 			newVy = 300 - y;
 		}*/
-		if(x<0)
+		if (x < 0)
 			x = 800;
 		if (x > 800)
 			x = 0;
@@ -195,13 +206,13 @@ public:
 			y = 600;
 		if (y > 600)
 			y = 0;
-		
+
 	}
 
-	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY , float aligmentWeight, float cohesionWeight, float avoidWeight) {
+	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY, float aligmentWeight, float cohesionWeight, float avoidWeight) {
 
 
-		float avoidDistance = 100;
+		float avoidDistance = 10;
 		float avoidAngle = 359;
 
 		float aligmentDistance = 30;
@@ -227,45 +238,45 @@ public:
 		}*/
 
 
+		const int maxNegihbors = 10000;
 
 		float avoidVelocityX = 0;
 		float avoidVelocityY = 0;
 
-		Fish* avoidNeighbors[100];
+		Fish* neighbors[maxNegihbors];
 
-		int count = GetNeighbors(fishes, n, avoidDistance, avoidAngle,avoidNeighbors);
-		CalculateAvoidVelocity(avoidNeighbors, count, avoidVelocityX, avoidVelocityY);
+		int count = GetNeighbors(fishes, n, avoidDistance, avoidAngle, neighbors);
+		CalculateAvoidVelocity(neighbors, count, avoidVelocityX, avoidVelocityY);
 
 
 
 		float aligmentVelocityX = 0;
 		float aligmentVelocityY = 0;
-		/*vector<Fish*> aligmentNeighbors = GetNeighbors(fishes, n, aligmentDistance, aligmentAngle);
-		CalculateAligmentVelocity(aligmentNeighbors, aligmentVelocityX, aligmentVelocityY);*/
+		count = GetNeighbors(fishes, n, aligmentDistance, aligmentAngle, neighbors);
+		CalculateAligmentVelocity(neighbors, count, aligmentVelocityX, aligmentVelocityY);
 
 		float cohesionVelocityX = 0;
 		float cohesionVelocityY = 0;
-		/*vector<Fish*> cohesionNeighbors = GetNeighbors(fishes, n, cohesionDistance, cohesionAngle);
-		CalculateCohesionVelocity(cohesionNeighbors, cohesionVelocityX, cohesionVelocityY);
+		count = GetNeighbors(fishes, n, cohesionDistance, cohesionAngle, neighbors);
+		CalculateCohesionVelocity(neighbors, count, cohesionVelocityX, cohesionVelocityY);
 
-		*/
+
 
 		newVx = aligmentWeight * aligmentVelocityX + cohesionWeight * cohesionVelocityX + avoidWeight * avoidVelocityX;
 		newVy = aligmentWeight * aligmentVelocityY + cohesionWeight * cohesionVelocityY + avoidWeight * avoidVelocityY;
 
 		CalculateObsticleAvoidance(newVx, newVy);
-		
+
 
 		normalize(newVx, newVy);
 		newVx *= Speed;
-		newVy *= Speed; 
+		newVy *= Speed;
 		if (newVx == 0 && newVy == 0)
 		{
 			newVx = vx;
 			newVy = vy;
-			
 		}
-		colorId = (count > 0) ? 2 : 1;
+
 	}
 
 	__host__ __device__ void ChangeVelocity(float newVx, float newVy, float dt)
@@ -300,7 +311,7 @@ public:
 		vy = newVy2;
 	}
 
-	__host__ __device__ void UpdatePositionKernel(Fish* fishes, int n, float dt, int mouseX, int mouseY, float alignWeight, float cohesionWeight, float avoidWeight) {
+	__host__ __device__ void UpdatePositionKernel(Fish* fishes, int n, float dt, int mouseX, int mouseY, float avoidWeight, float alignWeight, float cohesionWeight) {
 
 		float newVx;
 		float newVy;
@@ -309,7 +320,9 @@ public:
 
 		ChangeVelocity(newVx, newVy, dt);
 
-		
+		//__syncthreads();
+
+
 		x += vx * dt;
 		y += vy * dt;
 	}

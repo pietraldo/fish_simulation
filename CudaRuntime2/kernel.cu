@@ -42,7 +42,7 @@ const char* fragmentShaderSource = "#version 330 core\n"
 
 
 __global__ void calculatePositionKernel(Fish* fishes, float dt, float* vertices,const int n) {
-	int i = threadIdx.x;
+	int i = threadIdx.x+1000*blockIdx.x;
 	fishes[i].UpdatePositionKernel(fishes, n,dt,0,0,4000,50.6,0.3);
 	fishes[i].SetVertexes(vertices+12*i);
 }
@@ -81,7 +81,7 @@ void processInput(GLFWwindow* window)
 		cohesionWeight -= 0.1;
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
 		cohesionWeight += 0.1;
-	cout << "Avoid: " << avoidWeight << " Align: " << alignWeight << " Cohesion: " << cohesionWeight << endl;
+	//cout << "Avoid: " << avoidWeight << " Align: " << alignWeight << " Cohesion: " << cohesionWeight << endl;
 }
 
 int main()
@@ -162,13 +162,13 @@ int main()
 
 
 
-	const int n = 10;
+	const int n = 2000;
 	float vertices[n * 12] = {0};
 
 	Fish* fishes= new Fish[n];
 	for (int i = 0; i < n; i++) {
-		int x = rand() % 800;  
-		int y = rand() % 600;  
+		int x = rand() % SCR_WIDTH;
+		int y = rand() % SCR_HEIGHT;  
 		fishes[i].SetCordinates((float)x,(float)y);
 	}
 	
@@ -245,7 +245,7 @@ int main()
 
 		double currentTime = glfwGetTime();
 
-		calculatePositionKernel <<<1, n >>> (dev_fishes,currentTime-lastTime, dev_vertices,n);
+		calculatePositionKernel <<<2, 1000 >>> (dev_fishes,currentTime-lastTime, dev_vertices,n);
 		cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "calculatePositionKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
@@ -280,7 +280,7 @@ int main()
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 		
-		//std::cout << 1/(currentTime - lastTime) << std::endl;
+		std::cout << 1/(currentTime - lastTime) << std::endl;
 
 		lastTime = currentTime;
 	}
