@@ -14,8 +14,9 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1200;
+const unsigned int SCR_HEIGHT = 900;
+const unsigned int MESH_SIZE = 100;
 
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
@@ -41,12 +42,20 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "}\n\0";
 
 
-__global__ void calculatePositionKernel(Fish* fishes, float dt, float* vertices,const int n) {
-	int i = threadIdx.x+1000*blockIdx.x;
-	fishes[i].UpdatePositionKernel(fishes, n,dt,0,0,4000,50.6,0.3);
-	fishes[i].SetVertexes(vertices+12*i);
+__global__ void calculatePositionKernel(Fish* fishes, float dt, float* vertices, const int n) {
+	int i = threadIdx.x + 500 * blockIdx.x;
+	fishes[i].UpdatePositionKernel(fishes, n, dt, 0, 0, 4000, 50.6, 0.3);
+	fishes[i].SetVertexes(vertices + 12 * i);
 }
 
+//__global__ int calculateIndexOfMesh(float x, float y) {
+//	int num_rows = SCR_HEIGHT / MESH_SIZE;
+//	int num_cols = SCR_WIDTH / MESH_SIZE;
+//
+//	int row = y / num_rows;
+//	int col = x / num_cols;
+//	return  row * num_cols + col;
+//}
 
 int mouseX = 0;
 int mouseY = 0;
@@ -83,6 +92,11 @@ void processInput(GLFWwindow* window)
 		cohesionWeight += 0.1;
 	//cout << "Avoid: " << avoidWeight << " Align: " << alignWeight << " Cohesion: " << cohesionWeight << endl;
 }
+
+struct ListNode {
+	Fish* fish;
+	int next;
+};
 
 int main()
 {
@@ -162,27 +176,27 @@ int main()
 
 
 
-	const int n = 2000;
-	float vertices[n * 12] = {0};
+	const int n = 1000;
+	float vertices[n * 12] = { 0 };
 
-	Fish* fishes= new Fish[n];
+	Fish* fishes = new Fish[n];
 	for (int i = 0; i < n; i++) {
 		int x = rand() % SCR_WIDTH;
-		int y = rand() % SCR_HEIGHT;  
-		fishes[i].SetCordinates((float)x,(float)y);
+		int y = rand() % SCR_HEIGHT;
+		fishes[i].SetCordinates((float)x, (float)y);
 	}
-	
+
 
 	Fish* dev_fishes;
 	float* dev_vertices;
-	
+
 	cudaError_t cudaStatus = cudaSetDevice(0);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudasetdevice failed!  do you have a cuda-capable gpu installed?");
 		return 1;
 	}
 
-	
+
 	cudaStatus = cudaMalloc((void**)&dev_vertices, n * sizeof(float) * 12);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamalloc failed!");
@@ -205,10 +219,23 @@ int main()
 		goto Error;
 	}
 
-	
+	/*int* dev_heads;
+	cudaStatus = cudaMalloc((void**)&dev_heads, n * sizeof(int));
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudamalloc failed!");
+		goto Error;
+	}
+
+	ListNode* dev_list;
+	cudaStatus = cudaMalloc((void**)&dev_list, n * sizeof(ListNode));
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudamalloc failed!");
+		goto Error;
+	}*/
+
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
 
-	
+
 
 	unsigned int VBO, VAO;
 	glGenVertexArrays(1, &VAO);
@@ -217,8 +244,8 @@ int main()
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), nullptr, GL_STATIC_DRAW);
 
-	
-	
+
+
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
@@ -245,7 +272,7 @@ int main()
 
 		double currentTime = glfwGetTime();
 
-		calculatePositionKernel <<<2, 1000 >>> (dev_fishes,currentTime-lastTime, dev_vertices,n);
+		calculatePositionKernel << <2, 500 >> > (dev_fishes, currentTime - lastTime, dev_vertices, n);
 		cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "calculatePositionKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
@@ -258,7 +285,7 @@ int main()
 			goto Error;
 		}
 
-		cudaStatus = cudaMemcpy(vertices, dev_vertices, n* sizeof(float)*12, cudaMemcpyDeviceToHost);
+		cudaStatus = cudaMemcpy(vertices, dev_vertices, n * sizeof(float) * 12, cudaMemcpyDeviceToHost);
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "cudaMemcpy failed!");
 			goto Error;
@@ -272,15 +299,15 @@ int main()
 		//_sleep(10);
 		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);
-		
+
 		glUseProgram(shaderProgram);
-		glBindVertexArray(VAO); 
-		glDrawArrays(GL_TRIANGLES, 0, n*3);
-		
+		glBindVertexArray(VAO);
+		glDrawArrays(GL_TRIANGLES, 0, n * 3);
+
 		glfwSwapBuffers(window);
 		glfwPollEvents();
-		
-		std::cout << 1/(currentTime - lastTime) << std::endl;
+
+		std::cout << 1 / (currentTime - lastTime) << std::endl;
 
 		lastTime = currentTime;
 	}

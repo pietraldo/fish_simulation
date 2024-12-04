@@ -1,6 +1,9 @@
 #pragma once
 #define _USE_MATH_DEFINES
 
+#define WIDTH 1200
+#define HEIGHT 900
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
@@ -9,6 +12,7 @@
 #include <math.h>
 #include <cmath>
 #include <vector>
+
 
 
 using namespace std;
@@ -199,12 +203,12 @@ public:
 			newVy = 300 - y;
 		}*/
 		if (x < 0)
-			x = 800;
-		if (x > 800)
+			x = WIDTH;
+		if (x > WIDTH)
 			x = 0;
 		if (y < 0)
-			y = 600;
-		if (y > 600)
+			y = HEIGHT;
+		if (y > HEIGHT)
 			y = 0;
 
 	}
@@ -341,7 +345,7 @@ public:
 
 	__host__ __device__ void SetVertexes(float* arr)
 	{
-		arr[0] = x + 10;
+		arr[0] = x + 5;
 		arr[1] = y;
 
 		arr[3] = colorId;
@@ -349,10 +353,10 @@ public:
 		arr[11] = colorId;
 
 		arr[4] = x;
-		arr[5] = y - 2;
+		arr[5] = y - 1.5;
 
 		arr[8] = x;
-		arr[9] = y + 2;
+		arr[9] = y + 1.5;
 
 		ChangeCordinates(arr[0], arr[1]);
 		ChangeCordinates(arr[4], arr[5]);
@@ -390,8 +394,8 @@ public:
 	}
 
 	__host__ __device__  void ChangeCordinates(float& x, float& y) {
-		x = (x - 400) / 400;
-		y = (y - 300) / 300;
+		x = (x - WIDTH/2) / (WIDTH/2);
+		y = (y - HEIGHT/2) / (HEIGHT/2);
 	}
 
 };
