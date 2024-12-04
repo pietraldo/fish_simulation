@@ -174,25 +174,33 @@ public:
 		{
 			
 		}*/
-		if (sqrt((x - 400) * (x - 400) + (300 - y) * (300 - y)) > 300)
+		/*if (sqrt((x - 400) * (x - 400) + (300 - y) * (300 - y)) > 300)
 		{
 			newVx = 400 - x;
 			newVy = 300 - y;
-		}
+		}*/
+		if(x<0)
+			x = 800;
+		if (x > 800)
+			x = 0;
+		if (y < 0)
+			y = 600;
+		if (y > 600)
+			y = 0;
 		
 	}
 
 	void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY , float aligmentWeight, float cohesionWeight, float avoidWeight) {
 
 
-		float avoidDistance = 20;
+		float avoidDistance = 10;
 		float avoidAngle = 359;
 
-		float aligmentDistance = 100;
-		float aligmentAngle = 358;
+		float aligmentDistance = 30;
+		float aligmentAngle = 120;
 
-		float cohesionDistance = 120;
-		float cohesionAngle = 358;
+		float cohesionDistance = 20;
+		float cohesionAngle = 120;
 
 		//float aligmentWeight = 0;
 		//float cohesionWeight = 0;
@@ -306,7 +314,7 @@ public:
 
 	__host__ __device__ void SetVertexes(float* arr)
 	{
-		arr[0] = x + 20;
+		arr[0] = x + 10;
 		arr[1] = y;
 
 		arr[3] = colorId;
@@ -314,10 +322,10 @@ public:
 		arr[11] = colorId;
 
 		arr[4] = x;
-		arr[5] = y - 4;
+		arr[5] = y - 2;
 
 		arr[8] = x;
-		arr[9] = y + 4;
+		arr[9] = y + 2;
 
 		ChangeCordinates(arr[0], arr[1]);
 		ChangeCordinates(arr[4], arr[5]);
