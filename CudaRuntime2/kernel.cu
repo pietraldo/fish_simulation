@@ -150,7 +150,7 @@ int main()
 		int y = rand() % 600;  
 		fishes[i].SetCordinates((float)x,(float)y);
 	}
-
+	fishes[0].SetCordinates(400, 300);
 
 	/*Fish* dev_fishes;
 	float* dev_vertices;
