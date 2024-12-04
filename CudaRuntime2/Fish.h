@@ -10,6 +10,8 @@
 #include <cmath>
 #include <vector>
 
+using namespace std;
+
 class Fish
 {
 	
@@ -22,21 +24,20 @@ private:
 
 	static float Speed;
 	static float MaxChangeOfDegreePerSecond;
-	float colorId = 2;
+	
 	static int FishId;
 	int id;
 public:
+	float colorId = 0;
 
 	Fish(): x(0), y(0){
 		id = FishId++;
 		colorId = (id == 0) ? 0 : 1;
-		std::cout << colorId <<" "<<id << std::endl;
 	}
 
 	Fish(float x, float y):x(x), y(y){	
 		id = FishId++;
 		colorId = (id == 0) ? 0 : 1;
-		std::cout << colorId << " "<<id<< std::endl;
 	}
 
 	void SetCordinates(float x, float y) {
@@ -49,41 +50,68 @@ public:
 		return (value > 0) ? 'L' : 'R';
 	}
 
-	/*float Distance(const Fish& fish) const {
+	float Distance(const Fish& fish) const {
 		return sqrt((x - fish.x) * (x - fish.x) + (y - fish.y) * (y - fish.y));
 	}
 
 	bool Angle(float angle, const Fish& fish) const {
-		float direction = atan2(vy, vx) * 180 / M_PI;
+		/*float direction = atan2(vy, vx) * 180 / M_PI;
 		float angleLow = direction - angle / 2;
 		float angleHigh = direction + angle / 2;
 		float fishAngle = atan2(fish.y, fish.x) * 180 / M_PI;
-
-
+*/
+		return true;
 	}
 
-	vector<Fish> GetNeighbors(Fish* fishes,int n, int distance, float angle) {
-		vector<Fish> neighbors;
+	vector<Fish*> GetNeighbors(Fish* fishes,int n, float distance, float angle) {
+		vector<Fish*> neighbors;
 
 		for (int i = 0; i < n; i++) {
-			if (this == &fishes[i]) continue;
+			if (id == fishes[i].id)
+				continue;
 			if (Distance(fishes[i]) < distance && Angle(angle, fishes[i])) {
-				neighbors.push_back(fishes[i]);
+				neighbors.push_back(&fishes[i]);
 			}
 		}
 		return neighbors;
-	}*/
-
-	void CalculateAvoidVelocity(Fish* fishes, float& newVx, float& newVy)
-	{
-
 	}
 
-	void CalculateDesiredVelocity(Fish* fishes, float& newVx, float& newVy, int mouseX, int mouseY) {
+	void CalculateAvoidVelocity(vector<Fish> fishes, float& newVx, float& newVy)
+	{
 		
 		
-		newVx = mouseX-x;
-		newVy = (600-mouseY)-y;
+	}
+
+	void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY) {
+		
+		
+		newVx = vx+rand() % 100;
+		newVy = vy + rand() % 100;
+
+		if (x < 100 || x>700 || y < 100 || y>500)
+		{
+			newVx = 400 - x;
+			newVy = 300 - y;
+		}
+		
+		float distance = 100;
+		float angle = 180;
+		
+		if (id == 0)
+		{
+			for (int i = 0; i < n; i++)
+				fishes[i].colorId = 1;
+			colorId = 0;
+			
+			vector<Fish*> avoidNeighbors = GetNeighbors(fishes, n, distance, angle);
+			for (int i = 0; i < avoidNeighbors.size(); i++)
+				avoidNeighbors[i]->colorId = 2;
+				/*avoidNeighbors[i].colorId = 2;
+			cout << avoidNeighbors.size() << endl;*/
+			
+		}
+		//CalculateAvoidVelocity(avoidNeighbors, newVx, newVy);
+
 		normalize(newVx, newVy);
 		newVx *= Speed;
 		newVy *= Speed;
@@ -127,7 +155,7 @@ public:
 
 		float newVx;
 		float newVy;
-		CalculateDesiredVelocity(fishes,newVx, newVy, mouseX, mouseY);
+		CalculateDesiredVelocity(fishes,n,newVx, newVy, mouseX, mouseY);
 		
 		ChangeVelocity(newVx, newVy, dt);
 
