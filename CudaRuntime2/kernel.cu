@@ -18,7 +18,7 @@ const unsigned int SCR_WIDTH = 1200;
 const unsigned int SCR_HEIGHT = 900;
 const unsigned int MESH_SIZE = 100;
 
-const unsigned int NUM_FISH = 10000;
+const unsigned int NUM_FISH = 2000;
 const unsigned int BLOCK_SIZE = 1000;
 
 const char* vertexShaderSource = "#version 330 core\n"
@@ -251,7 +251,7 @@ int main()
 	GLuint VBO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, n * sizeof(float) * 12, nullptr, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), nullptr, GL_DYNAMIC_DRAW);
 	cudaGraphicsResource* cudaVBO;
 	cudaGraphicsGLRegisterBuffer(&cudaVBO, VBO, cudaGraphicsMapFlagsWriteDiscard);
 

@@ -214,7 +214,10 @@ public:
 	}
 
 	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY, float aligmentWeight, float cohesionWeight, float avoidWeight) {
-
+		if (blockIdx.x == 0)
+			colorId = 1;
+		else
+			colorId = 0;
 
 		float avoidDistance = 10;
 		float avoidAngle = 359;
