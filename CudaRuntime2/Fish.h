@@ -144,22 +144,24 @@ public:
 
 	void CalculateObsticleAvoidance(float& newVx, float& newVy)
 	{
-		float avoidanceRange = 50;
+		//float avoidanceRange = 50;
 
-		// check if it is good direction
-		float dirX = newVx;
-		float dirY = newVy;
+		//// check if it is good direction
+		//float dirX = newVx;
+		//float dirY = newVy;
 
-		normalize(dirX, dirY);
-		dirX *= avoidanceRange;
-		dirY *= avoidanceRange;
+		//normalize(dirX, dirY);
+		//dirX *= avoidanceRange;
+		//dirY *= avoidanceRange;
 
-		// no colicion good to return
-		if (x + dirX > 0 && x + dirX < 800 && y + dirY>0 && y + dirY < 600) return;
+		//// no colicion good to return
+		//if (x + dirX > 0 && x + dirX < 800 && y + dirY>0 && y + dirY < 600) return;
 
-		cout<<"colision "<<dirX<<" "<<dirY << endl;
-		newVx = 0;
-		newVy = 0;
+		//cout<<"colision "<<dirX<<" "<<dirY << endl;
+		//newVx = 0;
+		//newVy = 0;
+
+		//while()
 
 		/*float dirX = vx;
 		float dirY = vy;
@@ -172,23 +174,29 @@ public:
 		{
 			
 		}*/
+		if (sqrt((x - 400) * (x - 400) + (300 - y) * (300 - y)) > 300)
+		{
+			newVx = 400 - x;
+			newVy = 300 - y;
+		}
+		
 	}
 
-	void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY) {
+	void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY , float aligmentWeight, float cohesionWeight, float avoidWeight) {
 
 
 		float avoidDistance = 20;
 		float avoidAngle = 359;
 
 		float aligmentDistance = 100;
-		float aligmentAngle = 180;
+		float aligmentAngle = 358;
 
 		float cohesionDistance = 120;
-		float cohesionAngle = 240;
+		float cohesionAngle = 358;
 
-		float aligmentWeight = 0.5;
-		float cohesionWeight = 0.8;
-		float avoidWeight = 1.9;
+		//float aligmentWeight = 0;
+		//float cohesionWeight = 0;
+		//float avoidWeight = 2.9;
 
 		// coloring fishes
 		if (id == 0)
@@ -225,6 +233,8 @@ public:
 
 		newVx = aligmentWeight * aligmentVelocityX + cohesionWeight * cohesionVelocityX + avoidWeight * avoidVelocityX;
 		newVy = aligmentWeight * aligmentVelocityY + cohesionWeight * cohesionVelocityY + avoidWeight * avoidVelocityY;
+
+		CalculateObsticleAvoidance(newVx, newVy);
 
 		normalize(newVx, newVy);
 		newVx *= Speed;
@@ -268,16 +278,16 @@ public:
 		vy = newVy2;
 	}
 
-	void UpdatePositionKernel(Fish* fishes, int n, float dt, int mouseX, int mouseY) {
+	void UpdatePositionKernel(Fish* fishes, int n, float dt, int mouseX, int mouseY, float alignWeight, float cohesionWeight, float avoidWeight) {
 
 		float newVx;
 		float newVy;
-		CalculateDesiredVelocity(fishes, n, newVx, newVy, mouseX, mouseY);
-		
+		CalculateDesiredVelocity(fishes, n, newVx, newVy, mouseX, mouseY, alignWeight, cohesionWeight, avoidWeight);
+
+
 		ChangeVelocity(newVx, newVy, dt);
 
-		CalculateObsticleAvoidance(newVx, newVy);
-
+		
 		x += vx * dt;
 		y += vy * dt;
 	}

@@ -63,6 +63,27 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	}
 }
 
+float avoidWeight = 0.5;
+float alignWeight = 0.5;
+float cohesionWeight = 0.5;
+
+void processInput(GLFWwindow* window)
+{
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+		avoidWeight -= 0.1;
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		avoidWeight += 0.1;
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		alignWeight -= 0.1;
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		alignWeight += 0.1;
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+		cohesionWeight -= 0.1;
+	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+		cohesionWeight += 0.1;
+	cout << "Avoid: " << avoidWeight << " Align: " << alignWeight << " Cohesion: " << cohesionWeight << endl;
+}
+
 int main()
 {
 	// glfw: initialize and configure
@@ -141,7 +162,7 @@ int main()
 
 
 
-	const int n = 1;
+	const int n = 1000;
 	float vertices[n * 12] = {0};
 
 	Fish* fishes= new Fish[n];
@@ -185,6 +206,7 @@ int main()
 
 	
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
+
 	
 
 	unsigned int VBO, VAO;
@@ -242,7 +264,7 @@ int main()
 		}*/
 
 		for (int i = 0; i < n; i++) {
-			fishes[i].UpdatePositionKernel(fishes, n, currentTime-lastTime, mouseX, mouseY);
+			fishes[i].UpdatePositionKernel(fishes, n, currentTime-lastTime, mouseX, mouseY, alignWeight, cohesionWeight, avoidWeight);
 			fishes[i].SetVertexes(vertices + 12 * i);
 		}
 
@@ -270,13 +292,7 @@ int main()
 	return 0;
 }
 
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow* window)
-{
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
-}
+
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
