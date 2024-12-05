@@ -41,12 +41,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\pietr\Documents\studia\karty graficzne\CudaRuntime2\include;C:\Users\pietr\Documents\studia\karty graficzne\CudaRuntime2\lib-vc2022;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\pietr\Documents\studia\karty graficzne\CudaRuntime2\include;C:\Users\pietr\Documents\studia\karty graficzne\CudaRuntime2\lib-vc2022;$(LibraryPath)</LibraryPath>
+    <IncludePath>CudaRuntime2\include;CudaRuntime2\lib-vc2022;$(IncludePath)</IncludePath>
+    <LibraryPath>CudaRuntime2\include;CudaRuntime2\lib-vc2022;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\Users\pietr\Documents\studia\karty graficzne\CudaRuntime2\include;C:\Users\pietr\Documents\studia\karty graficzne\CudaRuntime2\lib-vc2022;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\pietr\Documents\studia\karty graficzne\CudaRuntime2\include;C:\Users\pietr\Documents\studia\karty graficzne\CudaRuntime2\lib-vc2022;$(LibraryPath)</LibraryPath>
+    <IncludePath>CudaRuntime2\include;CudaRuntime2\lib-vc2022;$(IncludePath)</IncludePath>
+    <LibraryPath>CudaRuntime2\include;CudaRuntime2\lib-vc2022;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
