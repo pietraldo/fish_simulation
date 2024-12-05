@@ -43,10 +43,14 @@
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(SolutionDir)include;$(SolutionDir)lib-vc2022;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)include;$(SolutionDir)lib-vc2022;$(LibraryPath)</LibraryPath>
+    <PublicIncludeDirectories>
+    </PublicIncludeDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)include;$(SolutionDir)lib-vc2022;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)include;$(SolutionDir)lib-vc2022;$(LibraryPath)</LibraryPath>
+    <PublicIncludeDirectories>
+    </PublicIncludeDirectories>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -89,6 +93,7 @@
     <ClInclude Include="constants.h" />
     <ClInclude Include="Fish.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="shaders\Shader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\..\..\Downloads\glad\src\glad.c" />
@@ -98,6 +103,8 @@
   <ItemGroup>
     <None Include="shader.fs" />
     <None Include="shader.vs" />
+    <None Include="shaders\shader.fs" />
+    <None Include="shaders\shader.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
