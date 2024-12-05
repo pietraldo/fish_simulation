@@ -344,7 +344,7 @@ int main()
 		for (int i = 0; i < num_squares; i++) {
 			for (int j = 0; j < heads[i].size(); j++) {
 				if (j == 0)
-					headsIndex[i] = j;
+					headsIndex[i] = index;
 				indexes[index++] = heads[i][j];
 			}
 		}

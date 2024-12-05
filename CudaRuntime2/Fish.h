@@ -139,14 +139,27 @@ public:
 		if (index % num_cols != num_cols - 1 && index + num_cols < num_squares)
 			list_index[8] = index + 1 + num_cols;
 
+		int aa = 0;
 		for (int i = 0; i < 9; i++)
 		{
 			if (list_index[i] == -1)
 				continue;
-			int indexStart = dev_headsIndex[index];
+			int indexStart = dev_headsIndex[list_index[i]];
 			int indexEnd = (list_index[i] == num_squares - 1) ? n : dev_headsIndex[list_index[i] + 1];
+			
+			int k = 2;
+			while (indexEnd != -1 && list_index[i] + k <= num_squares - 1)
+			{
+				indexEnd = dev_headsIndex[list_index[i] + k];
+				k++;
+			}
+				
+			if (indexStart == -1 || indexEnd == -1)
+				continue;
+
 			for (int j = indexStart; j < indexEnd; j++)
 			{
+				aa++;
 				Fish* fish = &fishes[dev_indexes[j]];
 				if (this == fish)
 					continue;
@@ -156,7 +169,10 @@ public:
 			}
 			
 		}
-		
+		if(aa>1000)
+			colorId = 2;
+		else
+			colorId = 1;
 		
 		return count;
 	}
