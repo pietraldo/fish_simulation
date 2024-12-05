@@ -35,10 +35,11 @@ private:
 	__host__ __device__  static int FishId;*/
 	float Speed = 100.0f;
 	float MaxChangeOfDegreePerSecond = 200.0f;
-	int id = 1;
+	
 
 public:
 	float colorId = 0;
+	int id = 1;
 
 	__host__ __device__  Fish() : x(0), y(0) {
 		vx = rand() % 100 - 50;
@@ -113,6 +114,7 @@ public:
 		return  row * num_cols + col;
 	}
 
+
 	__host__ __device__ int GetNeighbors(Fish* fishes, int n, float distance, float angle, Fish** neighbors,  int* dev_indexes, int* dev_headsIndex, const int num_squares) {
 		int count = 0;
 
@@ -139,6 +141,13 @@ public:
 		if (index % num_cols != num_cols - 1 && index + num_cols < num_squares)
 			list_index[8] = index + 1 + num_cols;
 
+		if (id == 99)
+		{
+			for(int i=0; i<n; i++)
+				fishes[i].colorId = 0;
+			colorId = 1;
+		}
+
 		int aa = 0;
 		for (int i = 0; i < 9; i++)
 		{
@@ -148,7 +157,7 @@ public:
 			int indexEnd = (list_index[i] == num_squares - 1) ? n : dev_headsIndex[list_index[i] + 1];
 			
 			int k = 2;
-			while (indexEnd != -1 && list_index[i] + k <= num_squares - 1)
+			while (indexEnd == -1 && list_index[i] + k <= num_squares - 1)
 			{
 				indexEnd = dev_headsIndex[list_index[i] + k];
 				k++;
@@ -166,13 +175,13 @@ public:
 				if (Distance(*fish) < distance && Angle(angle, *fish)) {
 					neighbors[count++] = fish;
 				}
+				if (id == 99)
+				{
+					fish->colorId = 2;
+				}
 			}
 			
 		}
-		if(aa>1000)
-			colorId = 2;
-		else
-			colorId = 1;
 		
 		return count;
 	}
@@ -287,7 +296,7 @@ public:
 			y = 0;
 
 	}
-
+	
 	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int n, int* dev_indexes, int* dev_headsIndex, const int num_squares,
 		float& newVx, float& newVy, int mouseX, int mouseY, float aligmentWeight, float cohesionWeight, float avoidWeight) {
 		/*if (blockIdx.x == 0)
@@ -327,6 +336,7 @@ public:
 		float avoidVelocityY = 0;
 
 		Fish* neighbors[maxNegihbors];
+
 
 		int count = GetNeighbors(fishes, n, avoidDistance, avoidAngle, neighbors,dev_indexes, dev_headsIndex, num_squares);
 		CalculateAvoidVelocity(neighbors, count, avoidVelocityX, avoidVelocityY);
@@ -398,7 +408,7 @@ public:
 
 		float newVx;
 		float newVy;
-		CalculateDesiredVelocity(fishes, n,dev_indexes, dev_indexes, num_squares, newVx, newVy, mouseX, mouseY, alignWeight, cohesionWeight, avoidWeight);
+		CalculateDesiredVelocity(fishes, n,dev_indexes, dev_headsIndex, num_squares, newVx, newVy, mouseX, mouseY, alignWeight, cohesionWeight, avoidWeight);
 
 
 		ChangeVelocity(newVx, newVy, dt);

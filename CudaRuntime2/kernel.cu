@@ -181,7 +181,7 @@ int main()
 		int y = rand() % SCR_HEIGHT;
 		fishes[i].SetCordinates((float)x, (float)y);
 	}
-
+	fishes[0].id = 99;
 
 	Fish* dev_fishes;
 	float* dev_vertices;
