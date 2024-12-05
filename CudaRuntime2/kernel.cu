@@ -41,11 +41,12 @@ const char* fragmentShaderSource = "#version 330 core\n"
 
 
 __global__ void calculatePositionKernel(Fish* fishes,int* dev_indexes,int* dev_headsIndex,
-	const int num_squares, float dt, float* vertices, const int n,bool stop_simulation) {
+	const int num_squares, float dt, float* vertices, const int n,bool stop_simulation,
+	float avoidWeight, float alignWeight, float cohesionWeight) {
 	
 	int i = threadIdx.x + BLOCK_SIZE * blockIdx.x;
 	fishes[i].UpdatePositionKernel(fishes, n,  dev_indexes, dev_headsIndex, num_squares, dt, 0, 0, 
-		4000, 50.6, 0.3, stop_simulation);
+		avoidWeight, alignWeight, cohesionWeight, stop_simulation);
 	fishes[i].SetVertexes(vertices + 12 * i);
 }
 
@@ -93,7 +94,7 @@ void processInput(GLFWwindow* window)
 		cohesionWeight -= 0.1;
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
 		cohesionWeight += 0.1;
-	//cout << "Avoid: " << avoidWeight << " Align: " << alignWeight << " Cohesion: " << cohesionWeight << endl;
+	cout << "Avoid: " << avoidWeight << " Align: " << alignWeight << " Cohesion: " << cohesionWeight << endl;
 }
 
 struct ListNode {
@@ -352,7 +353,8 @@ int main()
 
 
 		calculatePositionKernel << <NUM_FISH/BLOCK_SIZE, BLOCK_SIZE >> > (dev_fishes, 
-			dev_indexes, dev_headsIndex,num_squares, currentTime - lastTime, dev_vertices, n, stop_simulation);
+			dev_indexes, dev_headsIndex,num_squares, currentTime - lastTime, dev_vertices, n, stop_simulation,
+			avoidWeight, alignWeight, cohesionWeight);
 		cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "calculatePositionKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
