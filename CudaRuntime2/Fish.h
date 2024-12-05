@@ -33,8 +33,8 @@ private:
 	__host__ __device__  static float MaxChangeOfDegreePerSecond;
 
 	__host__ __device__  static int FishId;*/
-	float Speed = 100.0f;
-	float MaxChangeOfDegreePerSecond = 200.0f;
+	float Speed = 500.0f;
+	float MaxChangeOfDegreePerSecond = 1000.0f;
 	
 
 public:
@@ -141,12 +141,12 @@ public:
 		if (index % num_cols != num_cols - 1 && index + num_cols < num_squares)
 			list_index[8] = index + 1 + num_cols;
 
-		if (id == 99)
+		/*if (id == 99)
 		{
 			for(int i=0; i<n; i++)
 				fishes[i].colorId = 0;
 			colorId = 1;
-		}
+		}*/
 
 		int aa = 0;
 		for (int i = 0; i < 9; i++)
@@ -166,10 +166,10 @@ public:
 				if (Distance(*fish) < distance && Angle(angle, *fish)) {
 					neighbors[count++] = fish;
 				}
-				if (id == 99)
+				/*if (id == 99)
 				{
 					fish->colorId = 2;
-				}
+				}*/
 			}
 			
 		}
@@ -272,19 +272,19 @@ public:
 		{
 
 		}*/
-		/*if (sqrt((x - 400) * (x - 400) + (300 - y) * (300 - y)) > 300)
+		if (sqrt((x - WIDTH / 2) * (x - WIDTH / 2) + (HEIGHT / 2 - y) * (HEIGHT / 2 - y)) > HEIGHT / 2)
 		{
-			newVx = 400 - x;
-			newVy = 300 - y;
-		}*/
-		if (x < 0)
+			newVx = WIDTH/2 - x;
+			newVy = HEIGHT/2 - y;
+		}
+	/*	if (x < 0)
 			x = WIDTH;
 		if (x > WIDTH)
 			x = 0;
 		if (y < 0)
 			y = HEIGHT;
 		if (y > HEIGHT)
-			y = 0;
+			y = 0;*/
 
 	}
 	
@@ -321,12 +321,12 @@ public:
 		}*/
 
 
-		const int maxNegihbors = 10000;
+		//const int maxNegihbors = 10000;
 
 		float avoidVelocityX = 0;
 		float avoidVelocityY = 0;
 
-		Fish* neighbors[maxNegihbors];
+		Fish* neighbors[NUM_FISH];
 
 
 		int count = GetNeighbors(fishes, n, avoidDistance, avoidAngle, neighbors,dev_indexes, dev_headsIndex, num_squares);

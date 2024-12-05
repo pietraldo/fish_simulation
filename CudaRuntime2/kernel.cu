@@ -377,8 +377,6 @@ int main()
 		std::cout << 1 / (currentTime - lastTime) << std::endl;
 
 		lastTime = currentTime;
-
-		//_sleep(10);
 	}
 
 
