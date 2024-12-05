@@ -47,9 +47,9 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	}
 }
 
-float avoidWeight = 4000;
-float alignWeight = 50.6;
-float cohesionWeight = 0.3;
+float avoidWeight = 4.1;
+float alignWeight = 4.3;
+float cohesionWeight = 1;
 
 bool stop_simulation = false;
 float increase_step = 0.1;

@@ -34,7 +34,7 @@ private:
 
 	__host__ __device__  static int FishId;*/
 	float Speed = 50.0f;
-	float MaxChangeOfDegreePerSecond = 3600.0f;
+	float MaxChangeOfDegreePerSecond = 360.0f;
 	
 
 public:
@@ -190,12 +190,14 @@ public:
 		float closeDy = 0;
 		for (int i = 0; i < n; i++)
 		{
-			closeDx += x - neighbors[i]->x;
-			closeDy += y - neighbors[i]->y;
+			float dist=Distance(*neighbors[i]);
+			closeDx += (x - neighbors[i]->x)/ (dist*dist);
+			closeDy += (y - neighbors[i]->y) / (dist*dist);
+			
 		}
 
-		newVx = closeDx / n;
-		newVy = closeDy / n;
+		newVx = closeDx;
+		newVy = closeDy;
 	}
 
 	__host__ __device__ void CalculateAligmentVelocity(Fish** neighbors, int n, float& newVx, float& newVy) const
@@ -235,8 +237,8 @@ public:
 			avgY += neighbors[i]->y;
 		}
 
-		newVx = avgX / n;
-		newVy = avgY / n;
+		newVx = avgX / n - x;
+		newVy = avgY / n - y;
 
 	}
 
@@ -263,36 +265,36 @@ public:
 		float& newVx, float& newVy, int mouseX, int mouseY, float aligmentWeight, float cohesionWeight, float avoidWeight) {
 		
 
-		float avoidDistance = 4;
+		float avoidDistance = 6;
 		float avoidAngle = 359;
 
-		float aligmentDistance = 10;
+		float aligmentDistance = 15;
 		float aligmentAngle = 120;
 
-		float cohesionDistance = 10;
-		float cohesionAngle = 120;
+		float cohesionDistance = 20;
+		float cohesionAngle = 350;
 
-		float avoidVelocityX = 0;
-		float avoidVelocityY = 0;
+		
 
 		Fish* neighbors[NUM_FISH];
 
-
+		float avoidVelocityX = 0;
+		float avoidVelocityY = 0;
 		int count = GetNeighbors(fishes, n, avoidDistance, avoidAngle, neighbors,dev_indexes, dev_headsIndex, num_squares);
 		CalculateAvoidVelocity(neighbors, count, avoidVelocityX, avoidVelocityY);
-
-
+		normalize(avoidVelocityX, avoidVelocityY);
 
 		float aligmentVelocityX = 0;
 		float aligmentVelocityY = 0;
 		count = GetNeighbors(fishes, n, aligmentDistance, aligmentAngle, neighbors, dev_indexes, dev_headsIndex, num_squares);
 		CalculateAligmentVelocity(neighbors, count, aligmentVelocityX, aligmentVelocityY);
+		normalize(aligmentVelocityX, aligmentVelocityY);
 
 		float cohesionVelocityX = 0;
 		float cohesionVelocityY = 0;
 		count = GetNeighbors(fishes, n, cohesionDistance, cohesionAngle, neighbors, dev_indexes, dev_headsIndex, num_squares);
 		CalculateCohesionVelocity(neighbors, count, cohesionVelocityX, cohesionVelocityY);
-
+		normalize(cohesionVelocityX, cohesionVelocityY);
 
 
 		newVx = aligmentWeight * aligmentVelocityX + cohesionWeight * cohesionVelocityX + avoidWeight * avoidVelocityX;
