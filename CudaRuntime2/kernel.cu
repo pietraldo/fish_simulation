@@ -246,31 +246,15 @@ int main()
 		goto Error;
 	}
 
-	/*int* dev_heads;
-	cudaStatus = cudaMalloc((void**)&dev_heads, n * sizeof(int));
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudamalloc failed!");
-		goto Error;
-	}
-
-	ListNode* dev_list;
-	cudaStatus = cudaMalloc((void**)&dev_list, n * sizeof(ListNode));
-	if (cudaStatus != cudaSuccess) {
-		fprintf(stderr, "cudamalloc failed!");
-		goto Error;
-	}*/
+	
 
 	glfwSetMouseButtonCallback(window, mouse_button_callback);
 
 
 
 	unsigned int  VAO;
-	//unsigned int VBO, VAO;
 	glGenVertexArrays(1, &VAO);
-	//glGenBuffers(1, &VBO);
 	glBindVertexArray(VAO);
-	/*glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), nullptr, GL_STATIC_DRAW);*/
 
 	GLuint VBO;
 	glGenBuffers(1, &VBO);
@@ -342,9 +326,8 @@ int main()
 
 		int index = 0;
 		for (int i = 0; i < num_squares; i++) {
+			headsIndex[i] = index;
 			for (int j = 0; j < heads[i].size(); j++) {
-				if (j == 0)
-					headsIndex[i] = index;
 				indexes[index++] = heads[i][j];
 			}
 		}
@@ -374,15 +357,6 @@ int main()
 			fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching addKernel!\n", cudaStatus);
 			goto Error;
 		}
-
-		/*cudaStatus = cudaMemcpy(vertices, dev_vertices, n * sizeof(float) * 12, cudaMemcpyDeviceToHost);
-		if (cudaStatus != cudaSuccess) {
-			fprintf(stderr, "cudaMemcpy failed!");
-			goto Error;
-		}*/
-
-		/*glBindBuffer(GL_ARRAY_BUFFER, VBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_DYNAMIC_DRAW);*/
 
 		cudaGraphicsUnmapResources(1, &cudaVBO, 0);
 
