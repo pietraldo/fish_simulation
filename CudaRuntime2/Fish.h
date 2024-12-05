@@ -242,41 +242,7 @@ public:
 
 	__host__ __device__ void CalculateObsticleAvoidance(float& newVx, float& newVy)
 	{
-		//float avoidanceRange = 50;
-
-		//// check if it is good direction
-		//float dirX = newVx;
-		//float dirY = newVy;
-
-		//normalize(dirX, dirY);
-		//dirX *= avoidanceRange;
-		//dirY *= avoidanceRange;
-
-		//// no colicion good to return
-		//if (x + dirX > 0 && x + dirX < 800 && y + dirY>0 && y + dirY < 600) return;
-
-		//cout<<"colision "<<dirX<<" "<<dirY << endl;
-		//newVx = 0;
-		//newVy = 0;
-
-		//while()
-
-		/*float dirX = vx;
-		float dirY = vy;
-
-		normalize(dirX, dirY);
-		dirX *= avoidanceRange;
-		dirY *= avoidanceRange;
-
-		while(x + dirX > 700)
-		{
-
-		}*/
-		/*if (sqrt((x - WIDTH / 2) * (x - WIDTH / 2) + (HEIGHT / 2 - y) * (HEIGHT / 2 - y)) > HEIGHT / 2)
-		{
-			newVx = WIDTH/2 - x;
-			newVy = HEIGHT/2 - y;
-		}*/
+		
 		/*if (x < 0 || x > WIDTH || y < 0 || y > HEIGHT)
 		{
 			newVx = WIDTH / 2 - x;
@@ -295,10 +261,7 @@ public:
 	
 	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int n, int* dev_indexes, int* dev_headsIndex, const int num_squares,
 		float& newVx, float& newVy, int mouseX, int mouseY, float aligmentWeight, float cohesionWeight, float avoidWeight) {
-		/*if (blockIdx.x == 0)
-			colorId = 2;
-		else
-			colorId = 0;*/
+		
 
 		float avoidDistance = 4;
 		float avoidAngle = 359;
@@ -308,25 +271,6 @@ public:
 
 		float cohesionDistance = 10;
 		float cohesionAngle = 120;
-
-		//float aligmentWeight = 0;
-		//float cohesionWeight = 0;
-		//float avoidWeight = 2.9;
-
-		// coloring fishes
-		/*if (id == 0)
-		{
-			for (int i = 0; i < n; i++)
-				fishes[i].colorId = 1;
-			colorId = 0;
-
-			vector<Fish*> avoidNeighbors = GetNeighbors(fishes, n, avoidDistance, avoidAngle);
-			for (int i = 0; i < avoidNeighbors.size(); i++)
-				avoidNeighbors[i]->colorId = 2;
-		}*/
-
-
-		//const int maxNegihbors = 10000;
 
 		float avoidVelocityX = 0;
 		float avoidVelocityY = 0;
@@ -412,8 +356,6 @@ public:
 
 
 		ChangeVelocity(newVx, newVy, dt);
-
-		//__syncthreads();
 
 		
 		x += vx * dt;

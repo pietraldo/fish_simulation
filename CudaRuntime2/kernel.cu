@@ -11,33 +11,13 @@
 
 #include "Fish.h"
 #include "constants.h"
+#include "Shader.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 
 
-const char* vertexShaderSource = "#version 330 core\n"
-"layout (location = 0) in vec3 aPos;\n"
-"layout(location = 1) in float colorId;\n"
-"out float vID;\n"
-"void main()\n"
-"{\n"
-"   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-"   vID = colorId;\n"
-"}\0";
 
-const char* fragmentShaderSource = "#version 330 core\n"
-"in float vID;\n"
-"out vec4 FragColor;\n"
-"void main()\n"
-"{\n"
-"if(vID == 0.0f){\n"
-"   FragColor = vec4(1.0f, 0.0f, 0.2f, 1.0f);}\n"
-"else if(vID == 1.0f){\n"
-"   FragColor = vec4(0.0f, 1.0f, 0.0f, 1.0f);}\n"
-"else if(vID == 2.0f){\n"
-"   FragColor = vec4(0.0f, 0.0f, 1.0f, 1.0f);}\n"
-"}\n\0";
 
 
 __global__ void calculatePositionKernel(Fish* fishes,int* dev_indexes,int* dev_headsIndex,
@@ -148,49 +128,7 @@ int main()
 		return -1;
 	}
 
-
-
-
-	// compiling vertex shader
-	unsigned int vertexShader;
-	vertexShader = glCreateShader(GL_VERTEX_SHADER);
-	glShaderSource(vertexShader, 1, &vertexShaderSource, NULL);
-	glCompileShader(vertexShader);
-	int success;
-	char infoLog[512];
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	unsigned int fragmentShader;
-	fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-	glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-	glCompileShader(fragmentShader);
-
-	glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-	if (!success)
-	{
-		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-	}
-
-	// shader program
-	unsigned int shaderProgram;
-	shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-
-	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-	if (!success) {
-		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-	}
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-
+	Shader ourShader("shader.vs", "shader.fs");
 
 
 	const int n = NUM_FISH;
@@ -379,7 +317,7 @@ int main()
 
 		cudaGraphicsUnmapResources(1, &cudaVBO, 0);
 
-		glUseProgram(shaderProgram);
+		ourShader.use();
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, n * 3);
 

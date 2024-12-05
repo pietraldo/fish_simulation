@@ -1,3 +1,9 @@
+/*
+
+https://learnopengl.com/code_viewer_gh.php?code=src/1.getting_started/3.3.shaders_class/shaders_class.cpp
+
+*/
+
 #ifndef SHADER_H
 #define SHADER_H
 
