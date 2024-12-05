@@ -10,20 +10,11 @@
 #include <vector>
 
 #include "Fish.h"
+#include "constants.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
 
-// settings
-const unsigned int SCR_WIDTH = 1200;
-const unsigned int SCR_HEIGHT = 900;
-const unsigned int MESH_SIZE = 100;
-
-const unsigned int NUM_FISH = 2000;
-const unsigned int BLOCK_SIZE = 1000;
-
-const int num_rows = SCR_HEIGHT / MESH_SIZE;
-const int num_cols = SCR_WIDTH / MESH_SIZE;
 
 const char* vertexShaderSource = "#version 330 core\n"
 "layout (location = 0) in vec3 aPos;\n"
@@ -55,19 +46,7 @@ __global__ void calculatePositionKernel(Fish* fishes,int* dev_indexes,int* dev_h
 	fishes[i].SetVertexes(vertices + 12 * i);
 }
 
- int calculateIndexOfMesh(float x, float y) {
-	int row = y / MESH_SIZE;
-	int col = x / MESH_SIZE;
-	if (x >= SCR_WIDTH)
-		col = num_cols - 1;
-	if (y >= SCR_HEIGHT)
-		row = num_rows - 1;
-	if (x < 0)
-		col = 0;
-	if (y < 0)
-		row = 0;
-	return  row * num_cols + col;
-}
+
 
 int mouseX = 0;
 int mouseY = 0;
@@ -90,6 +69,8 @@ float cohesionWeight = 0.3;
 
 void processInput(GLFWwindow* window)
 {
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 		avoidWeight -= 0.1;
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -350,9 +331,8 @@ int main()
 		for (int i = 0; i < num_squares; i++)
 			heads[i] = {};
 
-		heads[0].push_back(1);
 		for (int i = 0; i < n; i++) {
-			int index = calculateIndexOfMesh(fishes[i].GetX(), fishes[i].GetY());
+			int index = Fish::calculateIndexOfMesh(fishes[i].GetX(), fishes[i].GetY());
 			heads[index].push_back(i);
 		}
 		

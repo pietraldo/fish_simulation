@@ -6,12 +6,14 @@
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include "constants.h"
 
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
 #include <cmath>
 #include <vector>
+
 
 
 
@@ -97,16 +99,65 @@ public:
 		return false;
 	}
 
-	__host__ __device__ int GetNeighbors(Fish* fishes, int n, float distance, float angle, Fish** neighbors) {
+	__host__ __device__ static int calculateIndexOfMesh(float x, float y) {
+		int row = y / MESH_SIZE;
+		int col = x / MESH_SIZE;
+		if (x >= SCR_WIDTH)
+			col = num_cols - 1;
+		if (y >= SCR_HEIGHT)
+			row = num_rows - 1;
+		if (x < 0)
+			col = 0;
+		if (y < 0)
+			row = 0;
+		return  row * num_cols + col;
+	}
+
+	__host__ __device__ int GetNeighbors(Fish* fishes, int n, float distance, float angle, Fish** neighbors,  int* dev_indexes, int* dev_headsIndex, const int num_squares) {
 		int count = 0;
 
-		for (int i = 0; i < n; i++) {
-			if (this == &fishes[i])
+		int index = calculateIndexOfMesh(x, y);
+
+		int list_index[9];
+		for (int i = 0; i < 9; i++)
+			list_index[i] = -1;
+		list_index[0] = index;
+		if (index % num_cols != 0)
+			list_index[1] = index - 1;
+		if (index % num_cols != num_cols-1)
+			list_index[2] = index + 1;
+		if (index - num_cols>0 )
+			list_index[3] = index - num_cols;
+		if (index + num_cols <num_squares)
+			list_index[4] = index + num_cols;
+		if (index % num_cols != 0 && index - num_cols > 0)
+			list_index[5] = index - 1 - num_cols;
+		if (index % num_cols != num_cols - 1 && index - num_cols > 0)
+			list_index[6] = index + 1 - num_cols;
+		if (index % num_cols != 0 && index + num_cols < num_squares)
+			list_index[7] = index - 1 + num_cols;
+		if (index % num_cols != num_cols - 1 && index + num_cols < num_squares)
+			list_index[8] = index + 1 + num_cols;
+
+		for (int i = 0; i < 9; i++)
+		{
+			if (list_index[i] == -1)
 				continue;
-			if (Distance(fishes[i]) < distance && Angle(angle, fishes[i])) {
-				neighbors[count++] = &fishes[i];
+			int indexStart = dev_headsIndex[index];
+			int indexEnd = (list_index[i] == num_squares - 1) ? n : dev_headsIndex[list_index[i] + 1];
+			for (int j = indexStart; j < indexEnd; j++)
+			{
+				Fish* fish = &fishes[dev_indexes[j]];
+				if (this == fish)
+					continue;
+				if (Distance(*fish) < distance && Angle(angle, *fish)) {
+					neighbors[count++] = fish;
+				}
 			}
+			
 		}
+		
+		
 		return count;
 	}
 
@@ -221,7 +272,8 @@ public:
 
 	}
 
-	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int n, float& newVx, float& newVy, int mouseX, int mouseY, float aligmentWeight, float cohesionWeight, float avoidWeight) {
+	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int n, int* dev_indexes, int* dev_headsIndex, const int num_squares,
+		float& newVx, float& newVy, int mouseX, int mouseY, float aligmentWeight, float cohesionWeight, float avoidWeight) {
 		/*if (blockIdx.x == 0)
 			colorId = 2;
 		else
@@ -260,19 +312,19 @@ public:
 
 		Fish* neighbors[maxNegihbors];
 
-		int count = GetNeighbors(fishes, n, avoidDistance, avoidAngle, neighbors);
+		int count = GetNeighbors(fishes, n, avoidDistance, avoidAngle, neighbors,dev_indexes, dev_headsIndex, num_squares);
 		CalculateAvoidVelocity(neighbors, count, avoidVelocityX, avoidVelocityY);
 
 
 
 		float aligmentVelocityX = 0;
 		float aligmentVelocityY = 0;
-		count = GetNeighbors(fishes, n, aligmentDistance, aligmentAngle, neighbors);
+		count = GetNeighbors(fishes, n, aligmentDistance, aligmentAngle, neighbors, dev_indexes, dev_headsIndex, num_squares);
 		CalculateAligmentVelocity(neighbors, count, aligmentVelocityX, aligmentVelocityY);
 
 		float cohesionVelocityX = 0;
 		float cohesionVelocityY = 0;
-		count = GetNeighbors(fishes, n, cohesionDistance, cohesionAngle, neighbors);
+		count = GetNeighbors(fishes, n, cohesionDistance, cohesionAngle, neighbors, dev_indexes, dev_headsIndex, num_squares);
 		CalculateCohesionVelocity(neighbors, count, cohesionVelocityX, cohesionVelocityY);
 
 
@@ -330,7 +382,7 @@ public:
 
 		float newVx;
 		float newVy;
-		CalculateDesiredVelocity(fishes, n, newVx, newVy, mouseX, mouseY, alignWeight, cohesionWeight, avoidWeight);
+		CalculateDesiredVelocity(fishes, n,dev_indexes, dev_indexes, num_squares, newVx, newVy, mouseX, mouseY, alignWeight, cohesionWeight, avoidWeight);
 
 
 		ChangeVelocity(newVx, newVy, dt);

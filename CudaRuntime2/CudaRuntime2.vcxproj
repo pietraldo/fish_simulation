@@ -87,6 +87,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\..\..\Downloads\linmath.h" />
+    <ClInclude Include="constants.h" />
     <ClInclude Include="Fish.h" />
     <ClInclude Include="Shader.h" />
   </ItemGroup>
