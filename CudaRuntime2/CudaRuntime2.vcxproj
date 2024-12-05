@@ -86,7 +86,6 @@
     <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\..\..\Downloads\linmath.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="Fish.h" />
     <ClInclude Include="Shader.h" />
@@ -95,11 +94,6 @@
     <ClCompile Include="..\..\..\..\..\Downloads\glad\src\glad.c" />
     <ClCompile Include="Fish.cpp" />
     <ClCompile Include="Shader.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="..\..\..\..\..\Desktop\awesomeface.png" />
-    <Image Include="..\..\..\..\..\Desktop\texture.png" />
-    <Image Include="..\..\..\..\..\Desktop\wall.png" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.fs" />
