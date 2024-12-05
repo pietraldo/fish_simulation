@@ -72,6 +72,7 @@ float alignWeight = 50.6;
 float cohesionWeight = 0.3;
 
 bool stop_simulation = false;
+float increase_step = 0.1;
 void processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -81,19 +82,28 @@ void processInput(GLFWwindow* window)
 		stop_simulation = !stop_simulation;
 		cout << "Space pressed" << endl;
 	}
+
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+		increase_step = 0.1f;
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+		increase_step = 1.0f;
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+		increase_step = 10.0f;
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+		increase_step = 100.0f;
 		
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		avoidWeight -= 0.1;
+		avoidWeight -= increase_step;
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		avoidWeight += 0.1;
+		avoidWeight += increase_step;
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		alignWeight -= 0.1;
+		alignWeight -= increase_step;
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		alignWeight += 0.1;
+		alignWeight += increase_step;
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
-		cohesionWeight -= 0.1;
+		cohesionWeight -= increase_step;
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-		cohesionWeight += 0.1;
+		cohesionWeight += increase_step;
 	cout << "Avoid: " << avoidWeight << " Align: " << alignWeight << " Cohesion: " << cohesionWeight << endl;
 }
 

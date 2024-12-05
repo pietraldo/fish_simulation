@@ -33,8 +33,8 @@ private:
 	__host__ __device__  static float MaxChangeOfDegreePerSecond;
 
 	__host__ __device__  static int FishId;*/
-	float Speed = 200.0f;
-	float MaxChangeOfDegreePerSecond = 1000.0f;
+	float Speed = 50.0f;
+	float MaxChangeOfDegreePerSecond = 3600.0f;
 	
 
 public:
@@ -277,19 +277,19 @@ public:
 			newVx = WIDTH/2 - x;
 			newVy = HEIGHT/2 - y;
 		}*/
-		if (x < 0 || x > WIDTH || y < 0 || y > HEIGHT)
+		/*if (x < 0 || x > WIDTH || y < 0 || y > HEIGHT)
 		{
 			newVx = WIDTH / 2 - x;
 			newVy = HEIGHT / 2 - y;
-		}
-	/*	if (x < 0)
+		}*/
+		if (x < 0)
 			x = WIDTH;
 		if (x > WIDTH)
 			x = 0;
 		if (y < 0)
 			y = HEIGHT;
 		if (y > HEIGHT)
-			y = 0;*/
+			y = 0;
 
 	}
 	
@@ -300,13 +300,13 @@ public:
 		else
 			colorId = 0;*/
 
-		float avoidDistance = 10;
+		float avoidDistance = 4;
 		float avoidAngle = 359;
 
-		float aligmentDistance = 30;
+		float aligmentDistance = 10;
 		float aligmentAngle = 120;
 
-		float cohesionDistance = 50;
+		float cohesionDistance = 10;
 		float cohesionAngle = 120;
 
 		//float aligmentWeight = 0;
