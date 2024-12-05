@@ -156,15 +156,6 @@ public:
 			int indexStart = dev_headsIndex[list_index[i]];
 			int indexEnd = (list_index[i] == num_squares - 1) ? n : dev_headsIndex[list_index[i] + 1];
 			
-			int k = 2;
-			while (indexEnd == -1 && list_index[i] + k <= num_squares - 1)
-			{
-				indexEnd = dev_headsIndex[list_index[i] + k];
-				k++;
-			}
-				
-			if (indexStart == -1 || indexEnd == -1)
-				continue;
 
 			for (int j = indexStart; j < indexEnd; j++)
 			{
@@ -404,7 +395,11 @@ public:
 		vy = newVy2;
 	}
 
-	__host__ __device__ void UpdatePositionKernel(Fish* fishes, int n,  int* dev_indexes, int* dev_headsIndex, const int num_squares, float dt, int mouseX, int mouseY, float avoidWeight, float alignWeight, float cohesionWeight) {
+	__host__ __device__ void UpdatePositionKernel(Fish* fishes, int n,  int* dev_indexes, int* dev_headsIndex, 
+		const int num_squares, float dt, int mouseX, int mouseY, 
+		float avoidWeight, float alignWeight, float cohesionWeight,bool stop_simulation) {
+
+		if (stop_simulation) return;
 
 		float newVx;
 		float newVy;
@@ -415,7 +410,7 @@ public:
 
 		//__syncthreads();
 
-
+		
 		x += vx * dt;
 		y += vy * dt;
 	}

@@ -40,9 +40,12 @@ const char* fragmentShaderSource = "#version 330 core\n"
 "}\n\0";
 
 
-__global__ void calculatePositionKernel(Fish* fishes,int* dev_indexes,int* dev_headsIndex,const int num_squares, float dt, float* vertices, const int n) {
+__global__ void calculatePositionKernel(Fish* fishes,int* dev_indexes,int* dev_headsIndex,
+	const int num_squares, float dt, float* vertices, const int n,bool stop_simulation) {
+	
 	int i = threadIdx.x + BLOCK_SIZE * blockIdx.x;
-	fishes[i].UpdatePositionKernel(fishes, n,  dev_indexes, dev_headsIndex, num_squares, dt, 0, 0, 4000, 50.6, 0.3);
+	fishes[i].UpdatePositionKernel(fishes, n,  dev_indexes, dev_headsIndex, num_squares, dt, 0, 0, 
+		4000, 50.6, 0.3, stop_simulation);
 	fishes[i].SetVertexes(vertices + 12 * i);
 }
 
@@ -67,10 +70,17 @@ float avoidWeight = 4000;
 float alignWeight = 50.6;
 float cohesionWeight = 0.3;
 
+bool stop_simulation = false;
 void processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	{
+		stop_simulation = !stop_simulation;
+		cout << "Space pressed" << endl;
+	}
+		
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
 		avoidWeight -= 0.1;
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -319,10 +329,6 @@ int main()
 			int index = Fish::calculateIndexOfMesh(fishes[i].GetX(), fishes[i].GetY());
 			heads[index].push_back(i);
 		}
-		
-		for (int i = 0; i < num_squares; i++) {
-			headsIndex[i] = -1;
-		}
 
 		int index = 0;
 		for (int i = 0; i < num_squares; i++) {
@@ -345,7 +351,8 @@ int main()
 		}
 
 
-		calculatePositionKernel << <NUM_FISH/BLOCK_SIZE, BLOCK_SIZE >> > (dev_fishes, dev_indexes, dev_headsIndex,num_squares, currentTime - lastTime, dev_vertices, n);
+		calculatePositionKernel << <NUM_FISH/BLOCK_SIZE, BLOCK_SIZE >> > (dev_fishes, 
+			dev_indexes, dev_headsIndex,num_squares, currentTime - lastTime, dev_vertices, n, stop_simulation);
 		cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "calculatePositionKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));
@@ -370,6 +377,8 @@ int main()
 		std::cout << 1 / (currentTime - lastTime) << std::endl;
 
 		lastTime = currentTime;
+
+		//_sleep(10);
 	}
 
 
