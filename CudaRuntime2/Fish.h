@@ -245,20 +245,24 @@ public:
 	__host__ __device__ void CalculateObsticleAvoidance(float& newVx, float& newVy)
 	{
 		
-		/*if (x < 0 || x > WIDTH || y < 0 || y > HEIGHT)
+		if (x < 0 || x > WIDTH || y < 0 || y > HEIGHT)
 		{
 			newVx = WIDTH / 2 - x;
 			newVy = HEIGHT / 2 - y;
-		}*/
-		if (x < 0)
+		}
+		/*if (x < 0)
 			x = WIDTH;
 		if (x > WIDTH)
 			x = 0;
 		if (y < 0)
 			y = HEIGHT;
 		if (y > HEIGHT)
-			y = 0;
-
+			y = 0;*/
+		/*if (sqrt((x - WIDTH / 2) * (x - WIDTH / 2) + (y - HEIGHT / 2) * (y - HEIGHT / 2)) > HEIGHT / 2)
+		{
+			newVx = WIDTH / 2 - x;
+			newVy = HEIGHT / 2 - y;
+		}*/
 	}
 	
 	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int n, int* dev_indexes, int* dev_headsIndex, const int num_squares,
