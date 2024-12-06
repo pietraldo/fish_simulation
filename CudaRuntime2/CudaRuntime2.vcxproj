@@ -96,8 +96,8 @@
     <ClInclude Include="Shader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\imgui\backends\imgui_impl_glfw.cpp" />
-    <ClCompile Include="..\..\imgui\backends\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\include\imgui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\include\imgui\backends\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\include\glad\glad.c" />
     <ClCompile Include="..\include\imgui\imgui.cpp" />
     <ClCompile Include="..\include\imgui\imgui_draw.cpp" />
