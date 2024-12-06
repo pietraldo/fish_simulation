@@ -41,13 +41,13 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)include;$(SolutionDir)lib-vc2022;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)include\imgui;$(SolutionDir)include;$(SolutionDir)lib-vc2022;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)include;$(SolutionDir)lib-vc2022;$(LibraryPath)</LibraryPath>
     <PublicIncludeDirectories>
     </PublicIncludeDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)include;$(SolutionDir)lib-vc2022;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)include\imgui;$(SolutionDir)include;$(SolutionDir)lib-vc2022;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)include;$(SolutionDir)lib-vc2022;$(LibraryPath)</LibraryPath>
     <PublicIncludeDirectories>
     </PublicIncludeDirectories>
@@ -96,7 +96,13 @@
     <ClInclude Include="Shader.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\imgui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\..\imgui\backends\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\include\glad\glad.c" />
+    <ClCompile Include="..\include\imgui\imgui.cpp" />
+    <ClCompile Include="..\include\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\include\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\include\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Fish.cpp" />
     <ClCompile Include="Shader.cpp" />
   </ItemGroup>

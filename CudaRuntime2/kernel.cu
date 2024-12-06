@@ -2,6 +2,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "imgui/imgui.h"
+#include "imgui/backends/imgui_impl_glfw.h"
+#include "imgui/backends/imgui_impl_opengl3.h"
 
 #include <stdio.h>
 #include "cuda_runtime.h"
@@ -24,7 +27,6 @@ int createWindow(GLFWwindow*&);
 void setUpParameters();
 
 
-
 __global__ void calculatePositionKernel(Fish* fishes,int* dev_indexes,int* dev_headsIndex, float dt, 
 	float* vertices, Parameters* parameters) {
 	
@@ -38,8 +40,35 @@ Parameters parameters;
 
 float increase_step = 0.1;
 
+void InitImGui(GLFWwindow* window) {
+	// 1. Create ImGui context
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImGuiIO& io = ImGui::GetIO(); // You can access IO for settings
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable keyboard controls (optional)
 
+	// 2. Initialize ImGui backends
+	ImGui_ImplGlfw_InitForOpenGL(window, true); // Initialize for GLFW
+	ImGui_ImplOpenGL3_Init("#version 330");     // OpenGL version (change to your GLSL version)
+}
+void RenderImGui() {
+	// Start a new ImGui frame
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	ImGui::NewFrame();
 
+	float myValue = 0.5f;
+
+	// 1. Create ImGui UI elements
+	ImGui::Begin("Hello, ImGui!"); // Create a window
+	ImGui::Text("This is a simple example!");
+	ImGui::SliderFloat("Float Slider", &myValue, 0.0f, 1.0f); // Example slider
+	ImGui::End(); // End window
+
+	// 2. Render ImGui
+	ImGui::Render();
+	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
 
 int main()
 {
@@ -47,6 +76,7 @@ int main()
 	int res = createWindow(window);
 	if (res == -1)
 		return -1;
+	InitImGui(window);
 		
 	Shader ourShader("shader.vs", "shader.fs");
 
@@ -143,7 +173,7 @@ int main()
 
 	
 
-	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	//glfwSetMouseButtonCallback(window, mouse_button_callback);
 
 
 
@@ -261,6 +291,8 @@ int main()
 		ourShader.use();
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, NUM_FISH * 3);
+
+		RenderImGui();
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
