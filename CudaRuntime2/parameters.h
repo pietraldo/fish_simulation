@@ -15,5 +15,6 @@ struct Parameters {
 	float avoidAngle;
 	float alignAngle;
 	float cohesionAngle;
+	int fish_number;
 };
 

@@ -11,6 +11,7 @@
 #include "device_launch_parameters.h"
 #include <cuda_gl_interop.h>
 #include <vector>
+#include <fstream>
 
 #include "Fish.h"
 #include "constants.h"
@@ -24,13 +25,37 @@ void processInput(GLFWwindow* window);
 int createWindow(GLFWwindow*&);
 
 
-void setUpParameters();
+void setUpParameters(int fish_number);
+
+
+int readNumberOfFishes()
+{
+	ifstream inputFile("fish_number.txt");
+	if (!inputFile) {
+		std::cerr << "Error: Could not open the file!" << std::endl;
+		return -1;
+	}
+
+	int fish_number;
+
+	inputFile >> fish_number;
+
+	if (inputFile.fail()) {
+		std::cerr << "Error: Could not read a number from the file!" << std::endl;
+		return -1;
+	}
+	std::cout << "The number read from the file is: " << fish_number << std::endl;
+	inputFile.close();
+	return fish_number;
+}
 
 
 __global__ void calculatePositionKernel(Fish* fishes,int* dev_indexes,int* dev_headsIndex, float dt, 
 	float* vertices, Parameters* parameters) {
 	
 	int i = threadIdx.x + BLOCK_SIZE * blockIdx.x;
+	if (i >= parameters->fish_number)
+		return;
 	fishes[i].UpdatePositionKernel(fishes, dev_indexes, dev_headsIndex, dt, parameters);
 	fishes[i].SetVertexes(vertices + 12 * i);
 }
@@ -77,6 +102,10 @@ void RenderImGui(int fps) {
 
 int main()
 {
+	int fish_number = readNumberOfFishes();
+	if (fish_number == -1)
+		return -1;
+
 	GLFWwindow* window;
 	int res = createWindow(window);
 	if (res == -1)
@@ -87,19 +116,18 @@ int main()
 
 
 
-	float vertices[NUM_FISH * 12] = { 0 };
+	float* vertices= new float[fish_number* 12];
 
-	Fish* fishes = new Fish[NUM_FISH];
-	for (int i = 0; i < NUM_FISH; i++) {
+	Fish* fishes = new Fish[fish_number];
+	for (int i = 0; i < fish_number; i++) {
 		int x = rand() % SCR_WIDTH;
 		int y = rand() % SCR_HEIGHT;
 		fishes[i].SetCordinates((float)x, (float)y);
-		if (i<(float)NUM_FISH*0.8)
+		if (i<(float)fish_number *0.8)
 		{
 			fishes[i].SetType(2);
 		}
 	}
-	fishes[0].id = 99;
 
 	Fish* dev_fishes;
 	float* dev_vertices;
@@ -107,10 +135,10 @@ int main()
 	int* dev_headsIndex; // index of each mesh in indexes table
 	Parameters* dev_parameters;
 
-	int indexes[NUM_FISH];
+	int* indexes= new int[fish_number];
 	int headsIndex[NUM_SQUARES];
 
-	setUpParameters();
+	setUpParameters(fish_number);
 
 	cudaError_t cudaStatus = cudaSetDevice(0);
 	if (cudaStatus != cudaSuccess) {
@@ -118,35 +146,35 @@ int main()
 		return 1;
 	}
 
-	cudaStatus = cudaMalloc((void**)&dev_vertices, NUM_FISH * sizeof(float) * 12);
+	cudaStatus = cudaMalloc((void**)&dev_vertices, fish_number * sizeof(float) * 12);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamalloc failed!");
 		goto Error;
 	}
-	cudaStatus = cudaMemcpy(dev_vertices, vertices, NUM_FISH * sizeof(float) * 12, cudaMemcpyHostToDevice);
+	cudaStatus = cudaMemcpy(dev_vertices, vertices, fish_number * sizeof(float) * 12, cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamemcpy failed!");
 		goto Error;
 	}
 
-	cudaStatus = cudaMalloc((void**)&dev_fishes, NUM_FISH * sizeof(Fish));
+	cudaStatus = cudaMalloc((void**)&dev_fishes, fish_number * sizeof(Fish));
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamalloc failed!");
 		goto Error;
 	}
-	cudaStatus = cudaMemcpy(dev_fishes, fishes, NUM_FISH * sizeof(Fish), cudaMemcpyHostToDevice);
+	cudaStatus = cudaMemcpy(dev_fishes, fishes, fish_number * sizeof(Fish), cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamemcpy failed!");
 		goto Error;
 	}
 
-	cudaStatus = cudaMalloc((void**)&dev_indexes, NUM_FISH * sizeof(int));
+	cudaStatus = cudaMalloc((void**)&dev_indexes, fish_number * sizeof(int));
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamalloc failed!");
 		goto Error;
 	}
 
-	cudaStatus = cudaMemcpy(dev_indexes, indexes, NUM_FISH * sizeof(int), cudaMemcpyHostToDevice);
+	cudaStatus = cudaMemcpy(dev_indexes, indexes, fish_number * sizeof(int), cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamemcpy failed!");
 		goto Error;
@@ -234,7 +262,7 @@ int main()
 		cudaGraphicsResourceGetMappedPointer((void**)&dev_vertices, &num_bytes, cudaVBO);
 
 		// making lists for each mesh
-		cudaStatus = cudaMemcpy(fishes, dev_fishes, NUM_FISH * sizeof(Fish), cudaMemcpyDeviceToHost);
+		cudaStatus = cudaMemcpy(fishes, dev_fishes, fish_number * sizeof(Fish), cudaMemcpyDeviceToHost);
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "cudaMemcpy failed!");
 			goto Error;
@@ -245,7 +273,7 @@ int main()
 		for (int i = 0; i < NUM_SQUARES; i++)
 			heads[i] = {};
 
-		for (int i = 0; i < NUM_FISH; i++) {
+		for (int i = 0; i < fish_number; i++) {
 			int index = Fish::calculateIndexOfMesh(fishes[i].GetX(), fishes[i].GetY());
 			heads[index].push_back(i);
 		}
@@ -258,7 +286,7 @@ int main()
 			}
 		}
 
-		cudaStatus = cudaMemcpy(dev_indexes, indexes, NUM_FISH * sizeof(int), cudaMemcpyHostToDevice);
+		cudaStatus = cudaMemcpy(dev_indexes, indexes, fish_number * sizeof(int), cudaMemcpyHostToDevice);
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "cudamemcpy failed!");
 			goto Error;
@@ -277,7 +305,7 @@ int main()
 		}
 
 
-		calculatePositionKernel << <NUM_FISH/BLOCK_SIZE, BLOCK_SIZE >> > (dev_fishes, 
+		calculatePositionKernel << <10000/BLOCK_SIZE, BLOCK_SIZE >> > (dev_fishes, 
 			dev_indexes, dev_headsIndex, currentTime - lastTime, dev_vertices, dev_parameters);
 		cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
@@ -295,14 +323,12 @@ int main()
 
 		ourShader.use();
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, NUM_FISH * 3);
+		glDrawArrays(GL_TRIANGLES, 0, fish_number * 3);
 
 		RenderImGui(1 / (currentTime - lastTime));
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
-
-		std::cout << 1 / (currentTime - lastTime) << std::endl;
 
 		lastTime = currentTime;
 	}
@@ -392,11 +418,9 @@ void processInput(GLFWwindow* window)
 		parameters.cohesionWeight -= increase_step;
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
 		parameters.cohesionWeight += increase_step;
-	cout << "Avoid: " << parameters.avoidWeight << " Align: "
-		<< parameters.alignWeight << " Cohesion: " << parameters.cohesionWeight << endl;
 }
 
-void setUpParameters()
+void setUpParameters(int fish_number)
 {
 	parameters.avoidWeight = AVOID_WEIGHT;
 	parameters.alignWeight = ALIGN_WEIGHT;
@@ -412,4 +436,5 @@ void setUpParameters()
 	parameters.avoidDistance = AVOID_DISTANCE;
 	parameters.cohesionDistance = COHESION_DISTANCE;
 	parameters.alignDistance = ALIGN_DISTANCE;
+	parameters.fish_number = fish_number;
 }

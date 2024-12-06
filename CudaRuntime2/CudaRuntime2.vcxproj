@@ -110,6 +110,9 @@
     <None Include="shader.fs" />
     <None Include="shader.vs" />
   </ItemGroup>
+  <ItemGroup>
+    <Text Include="fish_number.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\CUDA 12.6.targets" />

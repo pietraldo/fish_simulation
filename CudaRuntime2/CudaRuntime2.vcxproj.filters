@@ -4,21 +4,27 @@
     <CudaCompile Include="kernel.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\Downloads\glad\src\glad.c" />
     <ClCompile Include="Fish.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="..\include\imgui\backends\imgui_impl_glfw.cpp" />
+    <ClCompile Include="..\include\imgui\backends\imgui_impl_opengl3.cpp" />
+    <ClCompile Include="..\include\glad\glad.c" />
+    <ClCompile Include="..\include\imgui\imgui.cpp" />
+    <ClCompile Include="..\include\imgui\imgui_draw.cpp" />
+    <ClCompile Include="..\include\imgui\imgui_tables.cpp" />
+    <ClCompile Include="..\include\imgui\imgui_widgets.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="constants.h" />
     <ClInclude Include="Fish.h" />
     <ClInclude Include="Shader.h" />
-    <ClInclude Include="shaders\Shader.h" />
     <ClInclude Include="parameters.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.fs" />
     <None Include="shader.vs" />
-    <None Include="shaders\shader.fs" />
-    <None Include="shaders\shader.vs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="fish_number.txt" />
   </ItemGroup>
 </Project>

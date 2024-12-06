@@ -161,7 +161,7 @@ public:
 			if (list_index[i] == -1)
 				continue;
 			int indexStart = dev_headsIndex[list_index[i]];
-			int indexEnd = (list_index[i] == NUM_SQUARES - 1) ? NUM_FISH : dev_headsIndex[list_index[i] + 1];
+			int indexEnd = (list_index[i] == NUM_SQUARES - 1) ? parameters->fish_number : dev_headsIndex[list_index[i] + 1];
 			
 
 			for (int j = indexStart; j < indexEnd; j++)
@@ -270,7 +270,7 @@ public:
 	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int* dev_indexes, int* dev_headsIndex, float& newVx, float& newVy) {
 		
 
-		Fish* neighbors[NUM_FISH];
+		Fish* neighbors[10000];
 
 		float avoidVelocityX = 0;
 		float avoidVelocityY = 0;
@@ -409,7 +409,7 @@ public:
 		rotatePointAroundCenter(arr[0], arr[1], cx, cy, degreeInRadians);
 		rotatePointAroundCenter(arr[4], arr[5], cx, cy, degreeInRadians);
 		rotatePointAroundCenter(arr[8], arr[9], cx, cy, degreeInRadians);
-
+		
 
 	}
 
