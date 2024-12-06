@@ -57,8 +57,9 @@ void RenderImGui(int fps) {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	ImGui::Text("Fps: %d", fps);
+	
 	ImGui::Begin("Fish settings");
+	ImGui::Text("Fps: %d", fps);
 	ImGui::SliderFloat("Avoid weight", &parameters.avoidWeight, 0.0f, 5.0f); 
 	ImGui::SliderFloat("Align weight", &parameters.alignWeight, 0.0f, 5.0f); 
 	ImGui::SliderFloat("Cohesion weight", &parameters.cohesionWeight, 0.0f, 5.0f); 
