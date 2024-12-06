@@ -247,19 +247,19 @@ public:
 	__host__ __device__ void CalculateObsticleAvoidance(float& newVx, float& newVy)
 	{
 		
-		/*if (x < 0 || x > SCR_WIDTH || y < 0 || y > SCR_WIDTH)
+		if (x < 0 || x > SCR_WIDTH || y < 0 || y > SCR_WIDTH)
 		{
 			newVx = SCR_WIDTH / 2 - x;
 			newVy = SCR_HEIGHT / 2 - y;
-		}*/
-		if (x < 0)
+		}
+		/*if (x < 0)
 			x = SCR_WIDTH;
 		if (x > SCR_WIDTH)
 			x = 0;
 		if (y < 0)
 			y = SCR_HEIGHT;
 		if (y > SCR_HEIGHT)
-			y = 0;
+			y = 0;*/
 		/*if (sqrt((x - WIDTH / 2) * (x - WIDTH / 2) + (y - HEIGHT / 2) * (y - HEIGHT / 2)) > HEIGHT / 2)
 		{
 			newVx = WIDTH / 2 - x;

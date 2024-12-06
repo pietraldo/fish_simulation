@@ -217,7 +217,7 @@ int main()
 	GLuint VBO;
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), nullptr, GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float)*12*fish_number, nullptr, GL_DYNAMIC_DRAW);
 	cudaGraphicsResource* cudaVBO;
 	cudaGraphicsGLRegisterBuffer(&cudaVBO, VBO, cudaGraphicsMapFlagsWriteDiscard);
 
@@ -304,8 +304,8 @@ int main()
 			goto Error;
 		}
 
-
-		calculatePositionKernel << <10000/BLOCK_SIZE, BLOCK_SIZE >> > (dev_fishes, 
+		int numberOfBlocks = ceil(fish_number/(float)BLOCK_SIZE);
+		calculatePositionKernel << <numberOfBlocks, BLOCK_SIZE >> > (dev_fishes,
 			dev_indexes, dev_headsIndex, currentTime - lastTime, dev_vertices, dev_parameters);
 		cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
