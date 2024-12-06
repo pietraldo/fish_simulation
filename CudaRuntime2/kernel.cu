@@ -16,8 +16,12 @@
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
+void processInput(GLFWwindow* window);
+int createWindow(GLFWwindow*&);
 
 
+void setUpParameters();
 
 
 
@@ -30,106 +34,28 @@ __global__ void calculatePositionKernel(Fish* fishes,int* dev_indexes,int* dev_h
 }
 
 
-float mouseX = 0;
-float mouseY = 0;
-
-// Mouse button callback
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
-{
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-	{
-		double xpos, ypos;
-		glfwGetCursorPos(window, &xpos, &ypos);
-		std::cout << "Mouse clicked at position: (" << xpos << ", " << ypos << ")\n";
-		mouseX = xpos;
-		mouseY = ypos;
-	}
-}
-
 Parameters parameters;
 
 float increase_step = 0.1;
-void processInput(GLFWwindow* window)
-{
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetWindowShouldClose(window, true);
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-	{
-		parameters.stop_simulation = !parameters.stop_simulation;
-		cout << "Space pressed" << endl;
-	}
 
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
-		increase_step = 0.1f;
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
-		increase_step = 1.0f;
-	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
-		increase_step = 10.0f;
-	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
-		increase_step = 100.0f;
-		
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		parameters.avoidWeight -= increase_step;
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		parameters.avoidWeight += increase_step;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		parameters.alignWeight -= increase_step;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		parameters.alignWeight += increase_step;
-	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
-		parameters.cohesionWeight -= increase_step;
-	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-		parameters.cohesionWeight += increase_step;
-	cout << "Avoid: " << parameters.avoidWeight << " Align: " 
-		<< parameters.alignWeight << " Cohesion: " << parameters.cohesionWeight << endl;
-}
 
-		
+
 
 int main()
 {
-
-	
-
-	// glfw: initialize and configure
-	// ------------------------------
-	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-#ifdef __APPLE__
-	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-#endif
-
-	// glfw window creation
-	// --------------------
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
-	if (window == NULL)
-	{
-		std::cout << "Failed to create GLFW window" << std::endl;
-		glfwTerminate();
+	GLFWwindow* window;
+	int res = createWindow(window);
+	if (res == -1)
 		return -1;
-	}
-	glfwMakeContextCurrent(window);
-	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
-	// glad: load all OpenGL function pointers
-	// ---------------------------------------
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-	{
-		std::cout << "Failed to initialize GLAD" << std::endl;
-		return -1;
-	}
-
+		
 	Shader ourShader("shader.vs", "shader.fs");
 
 
-	const int n = NUM_FISH;
-	float vertices[n * 12] = { 0 };
 
-	Fish* fishes = new Fish[n];
-	for (int i = 0; i < n; i++) {
+	float vertices[NUM_FISH * 12] = { 0 };
+
+	Fish* fishes = new Fish[NUM_FISH];
+	for (int i = 0; i < NUM_FISH; i++) {
 		int x = rand() % SCR_WIDTH;
 		int y = rand() % SCR_HEIGHT;
 		fishes[i].SetCordinates((float)x, (float)y);
@@ -138,6 +64,14 @@ int main()
 
 	Fish* dev_fishes;
 	float* dev_vertices;
+	int* dev_indexes; // table of fish indexes (hash table) where are indexes sort by mesh
+	int* dev_headsIndex; // index of each mesh in indexes table
+	Parameters* dev_parameters;
+
+	int indexes[NUM_FISH];
+	int headsIndex[NUM_SQUARES];
+
+	setUpParameters();
 
 	cudaError_t cudaStatus = cudaSetDevice(0);
 	if (cudaStatus != cudaSuccess) {
@@ -145,42 +79,35 @@ int main()
 		return 1;
 	}
 
-
-	cudaStatus = cudaMalloc((void**)&dev_vertices, n * sizeof(float) * 12);
+	cudaStatus = cudaMalloc((void**)&dev_vertices, NUM_FISH * sizeof(float) * 12);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamalloc failed!");
 		goto Error;
 	}
-	cudaStatus = cudaMemcpy(dev_vertices, vertices, n * sizeof(float) * 12, cudaMemcpyHostToDevice);
+	cudaStatus = cudaMemcpy(dev_vertices, vertices, NUM_FISH * sizeof(float) * 12, cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamemcpy failed!");
 		goto Error;
 	}
 
-	cudaStatus = cudaMalloc((void**)&dev_fishes, n * sizeof(Fish));
+	cudaStatus = cudaMalloc((void**)&dev_fishes, NUM_FISH * sizeof(Fish));
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamalloc failed!");
 		goto Error;
 	}
-	cudaStatus = cudaMemcpy(dev_fishes, fishes, n * sizeof(Fish), cudaMemcpyHostToDevice);
+	cudaStatus = cudaMemcpy(dev_fishes, fishes, NUM_FISH * sizeof(Fish), cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamemcpy failed!");
 		goto Error;
 	}
 
-	int indexes[NUM_FISH];
-	int headsIndex[NUM_SQUARES];
-
-	int* dev_indexes;
-	int* dev_headsIndex;
-
-	cudaStatus = cudaMalloc((void**)&dev_indexes, n * sizeof(int));
+	cudaStatus = cudaMalloc((void**)&dev_indexes, NUM_FISH * sizeof(int));
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamalloc failed!");
 		goto Error;
 	}
 
-	cudaStatus = cudaMemcpy(dev_indexes, indexes, n * sizeof(int), cudaMemcpyHostToDevice);
+	cudaStatus = cudaMemcpy(dev_indexes, indexes, NUM_FISH * sizeof(int), cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamemcpy failed!");
 		goto Error;
@@ -197,21 +124,6 @@ int main()
 		fprintf(stderr, "cudamemcpy failed!");
 		goto Error;
 	}
-
-	Parameters* dev_parameters;
-
-	parameters.avoidWeight = AVOID_WEIGHT;
-	parameters.alignWeight = ALIGN_WEIGHT;
-	parameters.cohesionWeight = COHESION_WEIGHT;
-	parameters.stop_simulation = STOP_SIMULATION;
-	parameters.speed = SPEED;
-	parameters.maxChangeOfDegreePerSecond = MAX_CHANGE_OF_DEGREE_PER_SECOND;
-	parameters.alignAngle = ALIGN_ANGLE;
-	parameters.cohesionAngle = COHESION_ANGLE;
-	parameters.avoidAngle = AVOID_ANGLE;
-	parameters.avoidDistance = AVOID_DISTANCE;
-	parameters.cohesionDistance = COHESION_DISTANCE;
-	parameters.alignDistance = ALIGN_DISTANCE;
 
 	cudaStatus = cudaMalloc((void**)&dev_parameters, sizeof(Parameters));
 	if (cudaStatus != cudaSuccess) {
@@ -283,7 +195,7 @@ int main()
 		cudaGraphicsResourceGetMappedPointer((void**)&dev_vertices, &num_bytes, cudaVBO);
 
 		// making lists for each mesh
-		cudaStatus = cudaMemcpy(fishes, dev_fishes, n * sizeof(Fish), cudaMemcpyDeviceToHost);
+		cudaStatus = cudaMemcpy(fishes, dev_fishes, NUM_FISH * sizeof(Fish), cudaMemcpyDeviceToHost);
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "cudaMemcpy failed!");
 			goto Error;
@@ -294,7 +206,7 @@ int main()
 		for (int i = 0; i < NUM_SQUARES; i++)
 			heads[i] = {};
 
-		for (int i = 0; i < n; i++) {
+		for (int i = 0; i < NUM_FISH; i++) {
 			int index = Fish::calculateIndexOfMesh(fishes[i].GetX(), fishes[i].GetY());
 			heads[index].push_back(i);
 		}
@@ -307,13 +219,19 @@ int main()
 			}
 		}
 
-		cudaStatus = cudaMemcpy(dev_indexes, indexes, n * sizeof(int), cudaMemcpyHostToDevice);
+		cudaStatus = cudaMemcpy(dev_indexes, indexes, NUM_FISH * sizeof(int), cudaMemcpyHostToDevice);
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "cudamemcpy failed!");
 			goto Error;
 		}
 
 		cudaStatus = cudaMemcpy(dev_headsIndex, headsIndex, NUM_SQUARES * sizeof(int), cudaMemcpyHostToDevice);
+		if (cudaStatus != cudaSuccess) {
+			fprintf(stderr, "cudamemcpy failed!");
+			goto Error;
+		}
+
+		cudaStatus = cudaMemcpy(dev_parameters, &parameters, sizeof(Parameters), cudaMemcpyHostToDevice);
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "cudamemcpy failed!");
 			goto Error;
@@ -338,7 +256,7 @@ int main()
 
 		ourShader.use();
 		glBindVertexArray(VAO);
-		glDrawArrays(GL_TRIANGLES, 0, n * 3);
+		glDrawArrays(GL_TRIANGLES, 0, NUM_FISH * 3);
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
@@ -350,19 +268,111 @@ int main()
 
 
 Error:
-	// glfw: terminate, clearing all previously allocated GLFW resources.
-	// ------------------------------------------------------------------
+	free(fishes);
+	cudaFree(dev_fishes);
+	cudaFree(dev_vertices);
+	cudaFree(dev_indexes);
+	cudaFree(dev_headsIndex);
+	cudaFree(dev_parameters);
 	glfwTerminate();
 	return 0;
 }
 
 
 
-// glfw: whenever the window size changed (by OS or user resize) this callback function executes
-// ---------------------------------------------------------------------------------------------
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-	// make sure the viewport matches the new window dimensions; note that width and 
-	// height will be significantly larger than specified on retina displays.
 	glViewport(0, 0, width, height);
+}
+
+int createWindow(GLFWwindow* &window)
+{
+	// glfw: initialize and configure
+	// ------------------------------
+	glfwInit();
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	// glfw window creation
+	// --------------------
+	window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);
+	if (window == NULL)
+	{
+		std::cout << "Failed to create GLFW window" << std::endl;
+		glfwTerminate();
+		return -1;
+	}
+	glfwMakeContextCurrent(window);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+	// glad: load all OpenGL function pointers
+	// ---------------------------------------
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+	{
+		std::cout << "Failed to initialize GLAD" << std::endl;
+		return -1;
+	}
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+	{
+		double xpos, ypos;
+		glfwGetCursorPos(window, &xpos, &ypos);
+		std::cout << "Mouse clicked at position: (" << xpos << ", " << ypos << ")\n";
+	}
+}
+
+void processInput(GLFWwindow* window)
+{
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+		glfwSetWindowShouldClose(window, true);
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+	{
+		parameters.stop_simulation = !parameters.stop_simulation;
+		cout << "Space pressed" << endl;
+	}
+
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS)
+		increase_step = 0.1f;
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS)
+		increase_step = 1.0f;
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS)
+		increase_step = 10.0f;
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS)
+		increase_step = 100.0f;
+
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+		parameters.avoidWeight -= increase_step;
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+		parameters.avoidWeight += increase_step;
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+		parameters.alignWeight -= increase_step;
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+		parameters.alignWeight += increase_step;
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+		parameters.cohesionWeight -= increase_step;
+	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+		parameters.cohesionWeight += increase_step;
+	cout << "Avoid: " << parameters.avoidWeight << " Align: "
+		<< parameters.alignWeight << " Cohesion: " << parameters.cohesionWeight << endl;
+}
+
+void setUpParameters()
+{
+	parameters.avoidWeight = AVOID_WEIGHT;
+	parameters.alignWeight = ALIGN_WEIGHT;
+	parameters.cohesionWeight = COHESION_WEIGHT;
+	parameters.stop_simulation = STOP_SIMULATION;
+	parameters.speed = SPEED;
+	parameters.maxChangeOfDegreePerSecond = MAX_CHANGE_OF_DEGREE_PER_SECOND;
+	parameters.alignAngle = ALIGN_ANGLE;
+	parameters.cohesionAngle = COHESION_ANGLE;
+	parameters.avoidAngle = AVOID_ANGLE;
+	parameters.avoidDistance = AVOID_DISTANCE;
+	parameters.cohesionDistance = COHESION_DISTANCE;
+	parameters.alignDistance = ALIGN_DISTANCE;
 }
