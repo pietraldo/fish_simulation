@@ -104,7 +104,11 @@ int main()
 {
 	int fish_number = readNumberOfFishes();
 	if (fish_number == -1)
-		return -1;
+	{
+		cout << "Podaj liczbe rybek: ";
+		cin >> fish_number;
+	}
+		
 
 	GLFWwindow* window;
 	int res = createWindow(window);
