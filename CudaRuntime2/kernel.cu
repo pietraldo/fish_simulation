@@ -12,6 +12,7 @@
 #include "Fish.h"
 #include "constants.h"
 #include "Shader.h"
+#include "Parameters.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window);
@@ -20,20 +21,18 @@ void processInput(GLFWwindow* window);
 
 
 
-__global__ void calculatePositionKernel(Fish* fishes,int* dev_indexes,int* dev_headsIndex,
-	const int num_squares, float dt, float* vertices, const int n,bool stop_simulation,
-	float avoidWeight, float alignWeight, float cohesionWeight) {
+__global__ void calculatePositionKernel(Fish* fishes,int* dev_indexes,int* dev_headsIndex, float dt, 
+	float* vertices, Parameters* parameters) {
 	
 	int i = threadIdx.x + BLOCK_SIZE * blockIdx.x;
-	fishes[i].UpdatePositionKernel(fishes, n,  dev_indexes, dev_headsIndex, num_squares, dt, 0, 0, 
-		avoidWeight, alignWeight, cohesionWeight, stop_simulation);
+	fishes[i].UpdatePositionKernel(fishes, dev_indexes, dev_headsIndex, dt, parameters);
 	fishes[i].SetVertexes(vertices + 12 * i);
 }
 
 
+float mouseX = 0;
+float mouseY = 0;
 
-int mouseX = 0;
-int mouseY = 0;
 // Mouse button callback
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
@@ -47,11 +46,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	}
 }
 
-float avoidWeight = 4.1;
-float alignWeight = 4.3;
-float cohesionWeight = 1;
+Parameters parameters;
 
-bool stop_simulation = false;
 float increase_step = 0.1;
 void processInput(GLFWwindow* window)
 {
@@ -59,7 +55,7 @@ void processInput(GLFWwindow* window)
 		glfwSetWindowShouldClose(window, true);
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
 	{
-		stop_simulation = !stop_simulation;
+		parameters.stop_simulation = !parameters.stop_simulation;
 		cout << "Space pressed" << endl;
 	}
 
@@ -73,24 +69,22 @@ void processInput(GLFWwindow* window)
 		increase_step = 100.0f;
 		
 	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
-		avoidWeight -= increase_step;
+		parameters.avoidWeight -= increase_step;
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		avoidWeight += increase_step;
+		parameters.avoidWeight += increase_step;
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		alignWeight -= increase_step;
+		parameters.alignWeight -= increase_step;
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		alignWeight += increase_step;
+		parameters.alignWeight += increase_step;
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
-		cohesionWeight -= increase_step;
+		parameters.cohesionWeight -= increase_step;
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-		cohesionWeight += increase_step;
-	cout << "Avoid: " << avoidWeight << " Align: " << alignWeight << " Cohesion: " << cohesionWeight << endl;
+		parameters.cohesionWeight += increase_step;
+	cout << "Avoid: " << parameters.avoidWeight << " Align: " 
+		<< parameters.alignWeight << " Cohesion: " << parameters.cohesionWeight << endl;
 }
 
-struct ListNode {
-	Fish* fish;
-	int next;
-};
+		
 
 int main()
 {
@@ -174,9 +168,8 @@ int main()
 		goto Error;
 	}
 
-	const int num_squares = num_rows * num_cols;
-	int indexes[n];
-	int headsIndex[num_squares];
+	int indexes[NUM_FISH];
+	int headsIndex[NUM_SQUARES];
 
 	int* dev_indexes;
 	int* dev_headsIndex;
@@ -193,13 +186,40 @@ int main()
 		goto Error;
 	}
 
-	cudaStatus = cudaMalloc((void**)&dev_headsIndex, num_squares * sizeof(int));
+	cudaStatus = cudaMalloc((void**)&dev_headsIndex, NUM_SQUARES * sizeof(int));
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamalloc failed!");
 		goto Error;
 	}
 
-	cudaStatus = cudaMemcpy(dev_headsIndex, headsIndex, num_squares * sizeof(int), cudaMemcpyHostToDevice);
+	cudaStatus = cudaMemcpy(dev_headsIndex, headsIndex, NUM_SQUARES * sizeof(int), cudaMemcpyHostToDevice);
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudamemcpy failed!");
+		goto Error;
+	}
+
+	Parameters* dev_parameters;
+
+	parameters.avoidWeight = AVOID_WEIGHT;
+	parameters.alignWeight = ALIGN_WEIGHT;
+	parameters.cohesionWeight = COHESION_WEIGHT;
+	parameters.stop_simulation = STOP_SIMULATION;
+	parameters.speed = SPEED;
+	parameters.maxChangeOfDegreePerSecond = MAX_CHANGE_OF_DEGREE_PER_SECOND;
+	parameters.alignAngle = ALIGN_ANGLE;
+	parameters.cohesionAngle = COHESION_ANGLE;
+	parameters.avoidAngle = AVOID_ANGLE;
+	parameters.avoidDistance = AVOID_DISTANCE;
+	parameters.cohesionDistance = COHESION_DISTANCE;
+	parameters.alignDistance = ALIGN_DISTANCE;
+
+	cudaStatus = cudaMalloc((void**)&dev_parameters, sizeof(Parameters));
+	if (cudaStatus != cudaSuccess) {
+		fprintf(stderr, "cudamalloc failed!");
+		goto Error;
+	}
+
+	cudaStatus = cudaMemcpy(dev_parameters, &parameters, sizeof(Parameters), cudaMemcpyHostToDevice);
 	if (cudaStatus != cudaSuccess) {
 		fprintf(stderr, "cudamemcpy failed!");
 		goto Error;
@@ -270,8 +290,8 @@ int main()
 		}
 
 		
-		vector<vector<int>> heads(num_squares);
-		for (int i = 0; i < num_squares; i++)
+		vector<vector<int>> heads(NUM_SQUARES);
+		for (int i = 0; i < NUM_SQUARES; i++)
 			heads[i] = {};
 
 		for (int i = 0; i < n; i++) {
@@ -280,7 +300,7 @@ int main()
 		}
 
 		int index = 0;
-		for (int i = 0; i < num_squares; i++) {
+		for (int i = 0; i < NUM_SQUARES; i++) {
 			headsIndex[i] = index;
 			for (int j = 0; j < heads[i].size(); j++) {
 				indexes[index++] = heads[i][j];
@@ -293,7 +313,7 @@ int main()
 			goto Error;
 		}
 
-		cudaStatus = cudaMemcpy(dev_headsIndex, headsIndex, num_squares * sizeof(int), cudaMemcpyHostToDevice);
+		cudaStatus = cudaMemcpy(dev_headsIndex, headsIndex, NUM_SQUARES * sizeof(int), cudaMemcpyHostToDevice);
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "cudamemcpy failed!");
 			goto Error;
@@ -301,8 +321,7 @@ int main()
 
 
 		calculatePositionKernel << <NUM_FISH/BLOCK_SIZE, BLOCK_SIZE >> > (dev_fishes, 
-			dev_indexes, dev_headsIndex,num_squares, currentTime - lastTime, dev_vertices, n, stop_simulation,
-			avoidWeight, alignWeight, cohesionWeight);
+			dev_indexes, dev_headsIndex, currentTime - lastTime, dev_vertices, dev_parameters);
 		cudaStatus = cudaGetLastError();
 		if (cudaStatus != cudaSuccess) {
 			fprintf(stderr, "calculatePositionKernel launch failed: %s\n", cudaGetErrorString(cudaStatus));

@@ -1,12 +1,11 @@
 #pragma once
 #define _USE_MATH_DEFINES
 
-#define WIDTH 1200
-#define HEIGHT 900
 
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include "constants.h"
+#include "parameters.h"
 
 #include <iostream>
 #include <stdio.h>
@@ -26,16 +25,14 @@ private:
 	float x;
 	float y;
 
-	float vx = 1;
-	float vy = 0.4;
+	float vx;
+	float vy;
 
-	/*__host__ __device__  static float Speed;
-	__host__ __device__  static float MaxChangeOfDegreePerSecond;
-
-	__host__ __device__  static int FishId;*/
-	float Speed = 50.0f;
-	float MaxChangeOfDegreePerSecond = 360.0f;
 	
+	float speed=100;
+	float maxChangeOfDegreePerSecond;
+
+	Parameters* parameters;
 
 public:
 	float colorId = 0;
@@ -45,21 +42,20 @@ public:
 		vx = rand() % 100 - 50;
 		vy = rand() % 100 - 50;
 		normalize(vx, vy);
-		vx = vx * Speed;
-		vy = vy * Speed;
-		//id = FishId++;
+		vx = vx * speed;
+		vy = vy * speed;
 		colorId = (id == 0) ? 0 : 1;
 	}
 
-	__host__ __device__  Fish(float x, float y) :x(x), y(y) {
+	__host__ __device__  Fish(float x, float y): Fish() {
+		this->x = x;
+		this->y = y;
+	}
 
-		vx = rand() % 100 - 50;
-		vy = rand() % 100 - 50;
-		normalize(vx, vy);
-		vx = vx * Speed;
-		vy = vy * Speed;
-		//id = FishId++;
-		colorId = (id == 0) ? 0 : 1;
+	__host__ __device__ void SetParameters(Parameters* parameters) {
+		this->parameters = parameters;
+		speed = parameters->speed;
+		maxChangeOfDegreePerSecond = parameters->maxChangeOfDegreePerSecond;
 	}
 
 	__host__ __device__ float GetX() const {
@@ -104,18 +100,18 @@ public:
 		int row = y / MESH_SIZE;
 		int col = x / MESH_SIZE;
 		if (x >= SCR_WIDTH)
-			col = num_cols - 1;
+			col = NUM_COLUMNS - 1;
 		if (y >= SCR_HEIGHT)
-			row = num_rows - 1;
+			row = NUM_ROWS - 1;
 		if (x < 0)
 			col = 0;
 		if (y < 0)
 			row = 0;
-		return  row * num_cols + col;
+		return  row * NUM_COLUMNS + col;
 	}
 
 
-	__host__ __device__ int GetNeighbors(Fish* fishes, int n, float distance, float angle, Fish** neighbors,  int* dev_indexes, int* dev_headsIndex, const int num_squares) {
+	__host__ __device__ int GetNeighbors(Fish* fishes, float distance, float angle, Fish** neighbors,  int* dev_indexes, int* dev_headsIndex) {
 		int count = 0;
 
 		int index = calculateIndexOfMesh(x, y);
@@ -124,52 +120,41 @@ public:
 		for (int i = 0; i < 9; i++)
 			list_index[i] = -1;
 		list_index[0] = index;
-		if (index % num_cols != 0)
+		if (index % NUM_COLUMNS != 0)
 			list_index[1] = index - 1;
-		if (index % num_cols != num_cols-1)
+		if (index % NUM_COLUMNS != NUM_COLUMNS -1)
 			list_index[2] = index + 1;
-		if (index - num_cols>0 )
-			list_index[3] = index - num_cols;
-		if (index + num_cols <num_squares)
-			list_index[4] = index + num_cols;
-		if (index % num_cols != 0 && index - num_cols > 0)
-			list_index[5] = index - 1 - num_cols;
-		if (index % num_cols != num_cols - 1 && index - num_cols > 0)
-			list_index[6] = index + 1 - num_cols;
-		if (index % num_cols != 0 && index + num_cols < num_squares)
-			list_index[7] = index - 1 + num_cols;
-		if (index % num_cols != num_cols - 1 && index + num_cols < num_squares)
-			list_index[8] = index + 1 + num_cols;
+		if (index - NUM_COLUMNS >0 )
+			list_index[3] = index - NUM_COLUMNS;
+		if (index + NUM_COLUMNS <NUM_SQUARES)
+			list_index[4] = index + NUM_COLUMNS;
+		if (index % NUM_COLUMNS != 0 && index - NUM_COLUMNS > 0)
+			list_index[5] = index - 1 - NUM_COLUMNS;
+		if (index % NUM_COLUMNS != NUM_COLUMNS - 1 && index - NUM_COLUMNS > 0)
+			list_index[6] = index + 1 - NUM_COLUMNS;
+		if (index % NUM_COLUMNS != 0 && index + NUM_COLUMNS < NUM_SQUARES)
+			list_index[7] = index - 1 + NUM_COLUMNS;
+		if (index % NUM_COLUMNS != NUM_COLUMNS - 1 && index + NUM_COLUMNS < NUM_SQUARES)
+			list_index[8] = index + 1 + NUM_COLUMNS;
 
-		/*if (id == 99)
-		{
-			for(int i=0; i<n; i++)
-				fishes[i].colorId = 0;
-			colorId = 1;
-		}*/
+		
 
-		int aa = 0;
 		for (int i = 0; i < 9; i++)
 		{
 			if (list_index[i] == -1)
 				continue;
 			int indexStart = dev_headsIndex[list_index[i]];
-			int indexEnd = (list_index[i] == num_squares - 1) ? n : dev_headsIndex[list_index[i] + 1];
+			int indexEnd = (list_index[i] == NUM_SQUARES - 1) ? NUM_FISH : dev_headsIndex[list_index[i] + 1];
 			
 
 			for (int j = indexStart; j < indexEnd; j++)
 			{
-				aa++;
 				Fish* fish = &fishes[dev_indexes[j]];
 				if (this == fish)
 					continue;
 				if (Distance(*fish) < distance && Angle(angle, *fish)) {
 					neighbors[count++] = fish;
 				}
-				/*if (id == 99)
-				{
-					fish->colorId = 2;
-				}*/
 			}
 			
 		}
@@ -251,12 +236,12 @@ public:
 			newVy = HEIGHT / 2 - y;
 		}
 		/*if (x < 0)
-			x = WIDTH;
-		if (x > WIDTH)
+			x = SCR_WIDTH;
+		if (x > SCR_WIDTH)
 			x = 0;
 		if (y < 0)
-			y = HEIGHT;
-		if (y > HEIGHT)
+			y = SCR_HEIGHT;
+		if (y > SCR_HEIGHT)
 			y = 0;*/
 		/*if (sqrt((x - WIDTH / 2) * (x - WIDTH / 2) + (y - HEIGHT / 2) * (y - HEIGHT / 2)) > HEIGHT / 2)
 		{
@@ -265,51 +250,39 @@ public:
 		}*/
 	}
 	
-	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int n, int* dev_indexes, int* dev_headsIndex, const int num_squares,
-		float& newVx, float& newVy, int mouseX, int mouseY, float aligmentWeight, float cohesionWeight, float avoidWeight) {
-		
-
-		float avoidDistance = 6;
-		float avoidAngle = 359;
-
-		float aligmentDistance = 15;
-		float aligmentAngle = 120;
-
-		float cohesionDistance = 20;
-		float cohesionAngle = 350;
-
+	__host__ __device__ void CalculateDesiredVelocity(Fish* fishes, int* dev_indexes, int* dev_headsIndex, float& newVx, float& newVy) {
 		
 
 		Fish* neighbors[NUM_FISH];
 
 		float avoidVelocityX = 0;
 		float avoidVelocityY = 0;
-		int count = GetNeighbors(fishes, n, avoidDistance, avoidAngle, neighbors,dev_indexes, dev_headsIndex, num_squares);
+		int count = GetNeighbors(fishes,parameters->avoidDistance, parameters->avoidAngle, neighbors, dev_indexes, dev_headsIndex);
 		CalculateAvoidVelocity(neighbors, count, avoidVelocityX, avoidVelocityY);
 		normalize(avoidVelocityX, avoidVelocityY);
 
 		float aligmentVelocityX = 0;
 		float aligmentVelocityY = 0;
-		count = GetNeighbors(fishes, n, aligmentDistance, aligmentAngle, neighbors, dev_indexes, dev_headsIndex, num_squares);
+		count = GetNeighbors(fishes,parameters->alignDistance, parameters->alignAngle, neighbors, dev_indexes, dev_headsIndex);
 		CalculateAligmentVelocity(neighbors, count, aligmentVelocityX, aligmentVelocityY);
 		normalize(aligmentVelocityX, aligmentVelocityY);
 
 		float cohesionVelocityX = 0;
 		float cohesionVelocityY = 0;
-		count = GetNeighbors(fishes, n, cohesionDistance, cohesionAngle, neighbors, dev_indexes, dev_headsIndex, num_squares);
+		count = GetNeighbors(fishes, parameters->cohesionDistance, parameters->cohesionAngle, neighbors, dev_indexes, dev_headsIndex);
 		CalculateCohesionVelocity(neighbors, count, cohesionVelocityX, cohesionVelocityY);
 		normalize(cohesionVelocityX, cohesionVelocityY);
 
 
-		newVx = aligmentWeight * aligmentVelocityX + cohesionWeight * cohesionVelocityX + avoidWeight * avoidVelocityX;
-		newVy = aligmentWeight * aligmentVelocityY + cohesionWeight * cohesionVelocityY + avoidWeight * avoidVelocityY;
+		newVx = parameters->alignWeight * aligmentVelocityX + parameters->cohesionWeight * cohesionVelocityX + parameters->avoidWeight * avoidVelocityX;
+		newVy = parameters->alignWeight * aligmentVelocityY + parameters->cohesionWeight * cohesionVelocityY + parameters->avoidWeight * avoidVelocityY;
 
 		CalculateObsticleAvoidance(newVx, newVy);
 
 
 		normalize(newVx, newVy);
-		newVx *= Speed;
-		newVy *= Speed;
+		newVx *= speed;
+		newVy *= speed;
 		if (newVx == 0 && newVy == 0)
 		{
 			newVx = vx;
@@ -333,7 +306,7 @@ public:
 			signOfDegree = -signOfDegree;
 		}
 
-		float maxChangeOfDegree = MaxChangeOfDegreePerSecond * dt;
+		float maxChangeOfDegree = parameters->maxChangeOfDegreePerSecond * dt;
 
 		if (degreeDifference < maxChangeOfDegree)
 		{
@@ -343,27 +316,25 @@ public:
 		}
 
 		float newDegree = currentDegree + signOfDegree * maxChangeOfDegree;
-		float newVx2 = cos(newDegree * M_PI / 180) * Speed;
-		float newVy2 = sin(newDegree * M_PI / 180) * Speed;
+		float newVx2 = cos(newDegree * M_PI / 180) * speed;
+		float newVy2 = sin(newDegree * M_PI / 180) * speed;
 
 		vx = newVx2;
 		vy = newVy2;
 	}
 
-	__host__ __device__ void UpdatePositionKernel(Fish* fishes, int n,  int* dev_indexes, int* dev_headsIndex, 
-		const int num_squares, float dt, int mouseX, int mouseY, 
-		float avoidWeight, float alignWeight, float cohesionWeight,bool stop_simulation) {
+	__host__ __device__ void UpdatePositionKernel(Fish* fishes, int* dev_indexes, int* dev_headsIndex, float dt, Parameters* parameters) {
 
-		if (stop_simulation) return;
+		SetParameters(parameters);
+		if (parameters->stop_simulation) return;
 
-		float newVx;
-		float newVy;
-		CalculateDesiredVelocity(fishes, n,dev_indexes, dev_headsIndex, num_squares, newVx, newVy, mouseX, mouseY, alignWeight, cohesionWeight, avoidWeight);
 
+		float newVx=30;
+		float newVy=30;
+		CalculateDesiredVelocity(fishes,dev_indexes, dev_headsIndex, newVx, newVy);
 
 		ChangeVelocity(newVx, newVy, dt);
 
-		
 		x += vx * dt;
 		y += vy * dt;
 	}
@@ -431,8 +402,8 @@ public:
 	}
 
 	__host__ __device__  void ChangeCordinates(float& x, float& y) {
-		x = (x - WIDTH/2) / (WIDTH/2);
-		y = (y - HEIGHT/2) / (HEIGHT/2);
+		x = (x - SCR_WIDTH /2) / (SCR_WIDTH /2);
+		y = (y - SCR_HEIGHT /2) / (SCR_HEIGHT /2);
 	}
 
 };

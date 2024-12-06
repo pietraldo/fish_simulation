@@ -92,6 +92,7 @@
   <ItemGroup>
     <ClInclude Include="constants.h" />
     <ClInclude Include="Fish.h" />
+    <ClInclude Include="parameters.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="shaders\Shader.h" />
   </ItemGroup>

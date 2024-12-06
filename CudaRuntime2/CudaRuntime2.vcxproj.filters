@@ -13,6 +13,7 @@
     <ClInclude Include="Fish.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="shaders\Shader.h" />
+    <ClInclude Include="parameters.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.fs" />
