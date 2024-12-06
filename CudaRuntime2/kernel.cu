@@ -51,21 +51,25 @@ void InitImGui(GLFWwindow* window) {
 	ImGui_ImplGlfw_InitForOpenGL(window, true); // Initialize for GLFW
 	ImGui_ImplOpenGL3_Init("#version 330");     // OpenGL version (change to your GLSL version)
 }
-void RenderImGui() {
+void RenderImGui(int fps) {
 	// Start a new ImGui frame
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
 
-	float myValue = 0.5f;
+	ImGui::Text("Fps: %d", fps);
+	ImGui::Begin("Fish settings");
+	ImGui::SliderFloat("Avoid weight", &parameters.avoidWeight, 0.0f, 5.0f); 
+	ImGui::SliderFloat("Align weight", &parameters.alignWeight, 0.0f, 5.0f); 
+	ImGui::SliderFloat("Cohesion weight", &parameters.cohesionWeight, 0.0f, 5.0f); 
+	ImGui::SliderFloat("Speed1", &parameters.speed1, 10.0f, 500.0f);
+	ImGui::SliderFloat("Speed2", &parameters.speed2, 10.0f, 500.0f);
+	ImGui::SliderFloat("Max change of degree per second1", &parameters.maxChangeOfDegreePerSecond1, 10.0f, 2000.0f);
+	ImGui::SliderFloat("Max change of degree per second2", &parameters.maxChangeOfDegreePerSecond2, 10.0f, 2000.0f);
+	if (ImGui::Button(parameters.stop_simulation?"Start simulation":"Stop simulation"))
+		parameters.stop_simulation = !parameters.stop_simulation;
+	ImGui::End();
 
-	// 1. Create ImGui UI elements
-	ImGui::Begin("Hello, ImGui!"); // Create a window
-	ImGui::Text("This is a simple example!");
-	ImGui::SliderFloat("Float Slider", &myValue, 0.0f, 1.0f); // Example slider
-	ImGui::End(); // End window
-
-	// 2. Render ImGui
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 }
@@ -292,7 +296,7 @@ int main()
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_TRIANGLES, 0, NUM_FISH * 3);
 
-		RenderImGui();
+		RenderImGui(1 / (currentTime - lastTime));
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
