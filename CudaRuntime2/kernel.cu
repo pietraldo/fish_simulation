@@ -59,6 +59,10 @@ int main()
 		int x = rand() % SCR_WIDTH;
 		int y = rand() % SCR_HEIGHT;
 		fishes[i].SetCordinates((float)x, (float)y);
+		if (i<(float)NUM_FISH*0.8)
+		{
+			fishes[i].SetType(2);
+		}
 	}
 	fishes[0].id = 99;
 
@@ -179,7 +183,7 @@ int main()
 
 		// render
 		// ------
-		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+		glClearColor(0.0f, 0.6f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		double currentTime = glfwGetTime();
@@ -268,12 +272,6 @@ int main()
 
 
 Error:
-	free(fishes);
-	cudaFree(dev_fishes);
-	cudaFree(dev_vertices);
-	cudaFree(dev_indexes);
-	cudaFree(dev_headsIndex);
-	cudaFree(dev_parameters);
 	glfwTerminate();
 	return 0;
 }
@@ -367,8 +365,10 @@ void setUpParameters()
 	parameters.alignWeight = ALIGN_WEIGHT;
 	parameters.cohesionWeight = COHESION_WEIGHT;
 	parameters.stop_simulation = STOP_SIMULATION;
-	parameters.speed = SPEED;
-	parameters.maxChangeOfDegreePerSecond = MAX_CHANGE_OF_DEGREE_PER_SECOND;
+	parameters.speed1 = SPEED1;
+	parameters.speed2 = SPEED2;
+	parameters.maxChangeOfDegreePerSecond1 = MAX_CHANGE_OF_DEGREE_PER_SECOND1;
+	parameters.maxChangeOfDegreePerSecond2 = MAX_CHANGE_OF_DEGREE_PER_SECOND2;
 	parameters.alignAngle = ALIGN_ANGLE;
 	parameters.cohesionAngle = COHESION_ANGLE;
 	parameters.avoidAngle = AVOID_ANGLE;

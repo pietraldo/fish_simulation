@@ -5,8 +5,10 @@ struct Parameters {
 	float alignWeight;
 	float cohesionWeight;
 	bool stop_simulation;
-	float speed;
-	float maxChangeOfDegreePerSecond;
+	float speed1;
+	float speed2;
+	float maxChangeOfDegreePerSecond1;
+	float maxChangeOfDegreePerSecond2;
 	float avoidDistance;
 	float alignDistance;
 	float cohesionDistance;

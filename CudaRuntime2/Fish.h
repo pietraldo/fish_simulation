@@ -34,6 +34,8 @@ private:
 
 	Parameters* parameters;
 
+	int type = 1;
+
 public:
 	float colorId = 0;
 	int id = 1;
@@ -44,18 +46,27 @@ public:
 		normalize(vx, vy);
 		vx = vx * speed;
 		vy = vy * speed;
-		colorId = (id == 0) ? 0 : 1;
 	}
 
-	__host__ __device__  Fish(float x, float y): Fish() {
+	__host__ __device__  Fish(float x, float y,int type): Fish() {
 		this->x = x;
 		this->y = y;
+		this->type = type;
 	}
 
 	__host__ __device__ void SetParameters(Parameters* parameters) {
 		this->parameters = parameters;
-		speed = parameters->speed;
-		maxChangeOfDegreePerSecond = parameters->maxChangeOfDegreePerSecond;
+		if (type == 1)
+		{
+			speed = parameters->speed1;
+			maxChangeOfDegreePerSecond = parameters->maxChangeOfDegreePerSecond1;
+		}
+		else
+		{
+			speed = parameters->speed2;
+			maxChangeOfDegreePerSecond = parameters->maxChangeOfDegreePerSecond2;
+		}
+		
 	}
 
 	__host__ __device__ float GetX() const {
@@ -69,6 +80,12 @@ public:
 	__host__ __device__  void SetCordinates(float x, float y) {
 		this->x = x;
 		this->y = y;
+	}
+
+	__host__ __device__ void SetType(int type) {
+		this->type = type;
+		if(type==2)
+			colorId = 1;
 	}
 
 	__host__ __device__  char CheckPointSide(float x1, float y1, float x2, float y2, float px, float py) const {
@@ -306,7 +323,7 @@ public:
 			signOfDegree = -signOfDegree;
 		}
 
-		float maxChangeOfDegree = parameters->maxChangeOfDegreePerSecond * dt;
+		float maxChangeOfDegree = maxChangeOfDegreePerSecond * dt;
 
 		if (degreeDifference < maxChangeOfDegree)
 		{
@@ -353,7 +370,19 @@ public:
 
 	__host__ __device__ void SetVertexes(float* arr)
 	{
-		arr[0] = x + 5;
+		float fish_width;
+		float fish_height;
+		if (type == 1)
+		{
+			fish_width = (float)FISH_WIDTH1/10;
+			fish_height = (float)FISH_HEIGHT1/10;
+		}
+		else
+		{
+			fish_width = (float)FISH_WIDTH2/10;
+			fish_height = (float)FISH_HEIGHT2/10;
+		}
+		arr[0] = x + fish_height;
 		arr[1] = y;
 
 		arr[3] = colorId;
@@ -361,10 +390,10 @@ public:
 		arr[11] = colorId;
 
 		arr[4] = x;
-		arr[5] = y - 1.5;
+		arr[5] = y - fish_width;
 
 		arr[8] = x;
-		arr[9] = y + 1.5;
+		arr[9] = y + fish_width;
 
 		ChangeCordinates(arr[0], arr[1]);
 		ChangeCordinates(arr[4], arr[5]);
