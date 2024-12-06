@@ -96,7 +96,7 @@
     <ClInclude Include="Shader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\Downloads\glad\src\glad.c" />
+    <ClCompile Include="..\include\glad\glad.c" />
     <ClCompile Include="Fish.cpp" />
     <ClCompile Include="Shader.cpp" />
   </ItemGroup>
